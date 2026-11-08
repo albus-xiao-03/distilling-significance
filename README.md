@@ -1,9 +1,11 @@
 # distilling-significance
 
-A hackathon prototype. An unchanged behaviour model, Unbox AI's **BehaviorGPT**, predicts the
-**attention decisions** people made on news headlines: which of the headlines shown to them they
-chose to open. Those predictions become **pseudo-labels** for supervised learning, and they are
-measured against the real decisions. The plan is [`plans/R1.md`](plans/R1.md).
+A prototype built for **Hack 148**, a hackathon held by **Sundai**.
+
+An unchanged behaviour model, Unbox AI's **BehaviorGPT**, predicts the **attention decisions**
+people made on news headlines: which of the headlines shown to them they chose to open. Those
+predictions become **pseudo-labels** for supervised learning, and they are measured against
+the real decisions. The plan is [`plans/R1.md`](plans/R1.md).
 
 > **Status:** the R1 pipeline is implemented and tested, the MIND headline catalog is
 > uploaded, and small API checks pass ([`reports/feasibility.md`](reports/feasibility.md)).
