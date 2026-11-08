@@ -40,6 +40,8 @@ from significance import config
 RECORD_COLUMNS = ["record_set", "record_id", "impression_id", "user_id", "time", "date", "split"]
 RECORD_SETS = ("evaluation", "selection", "probe", "evaluation_extra", "training_extra")
 EXTRA_SETS = ("evaluation_extra", "training_extra")
+#: Views of the expanded dataset (significance.expansion): re-keyed unions of record sets.
+VIEW_SETS = ("dataset", "dataset_eval", "dataset_validation", "dataset_training")
 
 
 def sample_records(pool: pd.DataFrame, n: int, seed: int, record_set: str) -> pd.DataFrame:
@@ -146,6 +148,6 @@ def save_record_sets(sets: dict[str, pd.DataFrame], work: Path) -> dict[str, Pat
 
 
 def load_records(work: Path, record_set: str) -> pd.DataFrame:
-    if record_set not in RECORD_SETS:
+    if record_set not in RECORD_SETS + VIEW_SETS:
         raise ValueError(f"unknown record set {record_set!r}")
     return pd.read_parquet(records_path(work, record_set))
