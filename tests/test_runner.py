@@ -122,3 +122,23 @@ def test_limited_runs_never_overwrite_full_prediction_files(tmp_path):
     assert full.name == "V1.parquet" and limited.name == "V1_first50.parquet"
     assert empty_limited.name == "V1_empty_first50.parquet"
     assert len({full, limited, empty_limited}) == 3
+
+
+def test_choose_variant_also_reports_auc_without_seen_before(mind_frames):
+    _, dec, recs = _setup(mind_frames)
+    dec = dec.copy()
+    dec["seen_before"] = [i % 3 == 0 for i in range(len(dec))]
+    keep = ["record_set", "record_id", "news_id", "confidence", "predicted_attention"]
+    good = dec.assign(confidence=dec["attended"] + 0.01, predicted_attention=dec["attended"])
+    # V1 is perfect on unseen observations but inverted on seen ones
+    v1 = dec.assign(
+        confidence=[
+            a + 0.01 if not s else 1.0 - a
+            for a, s in zip(dec["attended"], dec["seen_before"], strict=True)
+        ],
+        predicted_attention=0,
+    )
+    best, table = runner.choose_variant({"V1": v1[keep], "V2": good[keep]}, dec, recs, n_boot=20)
+    assert best == "V2"
+    assert table["V1"]["without_seen_before"]["value"] == 1.0
+    assert runner.best_variant(table, key=lambda e: e["without_seen_before"]["value"]) == "V1"

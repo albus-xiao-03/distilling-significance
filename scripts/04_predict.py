@@ -130,11 +130,23 @@ def cmd_select(p, args) -> None:
     if not preds:
         sys.exit("no selection predictions found")
     best, table = runner.choose_variant(preds, decisions, recs)
-    out = {"chosen": best, "mean_auc": table, "rule": "best mean per-record AUC (D16)"}
+    unseen = runner.best_variant(table, key=lambda e: e["without_seen_before"]["value"])
+    out = {
+        "chosen": best,
+        "rule": "best mean per-record AUC over all observations (D16)",
+        "mean_auc": table,
+        "best_without_seen_before": unseen,
+        "criteria_agree": best == unseen,
+    }
     path = p.work / "selection" / "choice.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, indent=1))
     print(json.dumps(out, indent=1))
+    if best != unseen:
+        print(
+            f"NOTE: without re-presented observations the best variant would be {unseen}, "
+            f"not {best}: raise this with the owner before the evaluation run."
+        )
 
 
 def main() -> None:

@@ -185,6 +185,12 @@ def with_decisions(pred: pd.DataFrame, decisions: pd.DataFrame) -> pd.DataFrame:
     return merged.reset_index(drop=True)
 
 
+def best_variant(table: dict, key: Callable[[dict], float] = lambda e: e["value"]) -> str:
+    """The variant with the highest `key` (mean AUC by default); ties go to the simpler."""
+    order = {v: i for i, v in enumerate(config.VARIANTS)}
+    return max(table, key=lambda v: (key(table[v]), -order[v]))
+
+
 def choose_variant(
     predictions: dict[str, pd.DataFrame],
     decisions: pd.DataFrame,
@@ -193,19 +199,23 @@ def choose_variant(
     n_boot: int = 1000,
     seed: int = config.SEED,
 ) -> tuple[str, dict]:
-    """The variant with the best mean per-record AUC against the real decisions."""
+    """The variant with the best mean per-record AUC against the real decisions (D16).
+
+    Each variant's entry also holds its AUC without observations seen in an earlier
+    episode (re-presented ones, plan L7), which V2 writes into the history and V1/V1o do
+    not, so a reader can see whether that subset drives the choice."""
     persons = records.set_index("record_id")["user_id"]
     table = {}
     for variant, pred in predictions.items():
         merged = with_decisions(pred, decisions)
-        per_record = M.ranking_table(merged, "confidence")
-        est = M.mean_with_ci(
-            per_record["auc"].tolist(),
-            persons.loc[per_record["record_id"]].tolist(),
-            n_boot=n_boot,
-            seed=seed,
-        )
-        table[variant] = est.as_dict()
-    order = {v: i for i, v in enumerate(config.VARIANTS)}
-    best = max(table, key=lambda v: (table[v]["value"], -order[v]))
-    return best, table
+        estimates = {}
+        for name, frame in (("all", merged), ("unseen", merged[~merged["seen_before"]])):
+            per_record = M.ranking_table(frame.reset_index(drop=True), "confidence")
+            estimates[name] = M.mean_with_ci(
+                per_record["auc"].tolist(),
+                persons.loc[per_record["record_id"]].tolist(),
+                n_boot=n_boot,
+                seed=seed,
+            ).as_dict()
+        table[variant] = {**estimates["all"], "without_seen_before": estimates["unseen"]}
+    return best_variant(table), table
