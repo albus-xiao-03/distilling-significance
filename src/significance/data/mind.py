@@ -324,3 +324,37 @@ def describe(train: pd.DataFrame, dev: pd.DataFrame, news: pd.DataFrame) -> dict
         (both.drop_duplicates().groupby("user_id").size() > 1).sum()
     )
     return out
+
+
+# --- parsed tables under .temp/work/mind/ --------------------------------------------
+
+_TUPLE_COLUMNS = {"history": str, "presented": str, "clicked": int}
+
+
+def tables_dir(work: Path) -> Path:
+    return work / "mind"
+
+
+def save_tables(work: Path, train: pd.DataFrame, dev: pd.DataFrame, news: pd.DataFrame) -> Path:
+    """Store the parsed splits and the merged news table as parquet (git-ignored)."""
+    out = tables_dir(work)
+    out.mkdir(parents=True, exist_ok=True)
+    for name, frame in (("behaviors_train", train), ("behaviors_dev", dev)):
+        stored = frame.copy()
+        for col in _TUPLE_COLUMNS:
+            stored[col] = stored[col].map(list)
+        stored.to_parquet(out / f"{name}.parquet", index=False)
+    news.to_parquet(out / "news.parquet", index=False)
+    return out
+
+
+def load_tables(work: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """(train, dev, news) as `read_behaviors` and `merge_news` return them."""
+    src = tables_dir(work)
+    frames = []
+    for name in ("behaviors_train", "behaviors_dev"):
+        frame = pd.read_parquet(src / f"{name}.parquet")
+        for col, kind in _TUPLE_COLUMNS.items():
+            frame[col] = frame[col].map(lambda v, kind=kind: tuple(kind(x) for x in v))
+        frames.append(frame)
+    return frames[0], frames[1], pd.read_parquet(src / "news.parquet")

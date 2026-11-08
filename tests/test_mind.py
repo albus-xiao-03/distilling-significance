@@ -184,3 +184,14 @@ def test_describe_reports_aggregates(mind_frames):
     assert stats["selection_pool"]["share_with_earlier_train_impressions"] == 1.0
     assert stats["evaluation_pool"]["share_with_train_impressions"] == 1.0
     assert stats["dev"]["impressions_with_empty_history"] == int((dev["user_id"] == "U6").sum())
+
+
+def test_tables_round_trip_keeps_tuples(mind_frames, tmp_path):
+    train, dev, news = mind_frames
+    mind.save_tables(tmp_path, train, dev, news)
+    t2, d2, n2 = mind.load_tables(tmp_path)
+    assert t2["presented"].iloc[0] == train["presented"].iloc[0]
+    assert isinstance(d2["clicked"].iloc[0], tuple) and isinstance(d2["clicked"].iloc[0][0], int)
+    assert t2["history"].map(len).tolist() == train["history"].map(len).tolist()
+    assert list(n2["news_id"]) == list(news["news_id"])
+    assert (t2["time"] == train["time"]).all()
