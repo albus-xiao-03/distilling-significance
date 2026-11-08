@@ -81,37 +81,48 @@ flowchart LR
 
 ## 📊 Results so far
 
-**Scoreboard:** 5,000 validation-day impressions (R1), per-impression AUC (0.5 = coin flip):
+**Scoreboard:** per-impression AUC (0.5 = coin flip) on the 25,000-impression dataset. The
+1,000 impressions that chose the representation are left out, which leaves 24,000; the
+second column is the validation day only:
 
-| Who's guessing? | AUC |
-|---|---|
-| 🎲 Random | 0.500 |
-| 🕰️ Recency (newest first) | 0.510 |
-| 🤖 BehaviorGPT, *no* history | 0.523 |
-| 🔤 Content similarity (TF-IDF vs your past clicks) | 0.557 |
-| 🤖 **BehaviorGPT + your click history** | **0.600** [0.591, 0.609] |
-| 🔥 Popularity (earlier click rate) | 0.658 |
+| Who's guessing? | All 24,000 | Validation day (7,947) |
+|---|---|---|
+| 🎲 Random | 0.502 | 0.497 |
+| 🕰️ Recency (newest first) | 0.509 | 0.508 |
+| 🤖 BehaviorGPT, *no* history | — | 0.521 |
+| 🔤 Content similarity (TF-IDF vs your past clicks) | 0.573 | 0.554 |
+| 🤖 **BehaviorGPT + your click history** | **0.582** | **0.599** |
+| 🔥 Popularity (earlier click rate) | 0.662 | 0.655 |
 
 **The honest takeaways:**
 
-- ✅ **It works, zero-shot.** BehaviorGPT reads your past clicks and beats chance and text
-  similarity, without any training.
-- ✅ **Your history is the secret sauce.** It adds +0.078 AUC over no history.
+- ✅ **It works, zero-shot.** BehaviorGPT reads your past clicks and beats chance everywhere
+  (+0.080 AUC), without any training.
+- ✅ **Your history is the secret sauce.** It adds +0.079 AUC on the validation day, the same
+  as in the first run (+0.078).
+- 📅 **Plot twist: it's moody.** On the six training-file days its AUC swings from 0.53 to
+  0.61 depending on the day, and content similarity edges past it there (0.584 against
+  0.573). We don't know why yet.
 - ❌ **Popularity still wins.** News attention is mostly "what's hot right now", and
   BehaviorGPT sees no popularity signal at all (on purpose: the catalog has none).
-- 🟡 **Distillation is halfway there.** A small student trained on the pseudo-labels recovers
-  **41 %** of what real labels teach it; the target was 50 %.
-- 🧪 **Plot twist.** Telling the model which headlines you *skipped* made it **worse**
-  (−0.029 AUC), because to the API every view looks like interest.
+- 🟡 **Distillation is a third of the way there.** A small student trained on the
+  pseudo-labels recovers **32 %** of what real labels teach it; the target was 50 % (the
+  first, validation-only run had 41 %).
+- 🧪 **Skipped headlines backfire.** Telling the model which headlines you *skipped* made it
+  **worse** (−0.029 AUC), because to the API every view looks like interest.
 
 **Status:**
 
-- ✅ **R1 is done.** 5,000 impressions labelled, 20,348 API requests, 0 failures, and
-  every label can be reproduced from the response cache with no new calls. Full write-up:
+- ✅ **R1 is done.** 5,000 validation-day impressions, 20,348 API requests:
   [`reports/R1_results.md`](reports/R1_results.md).
-- 🏗️ **Scaling up to 25,000 impressions.** That's 17,053 from MIND-small's training file and
-  7,947 from its validation file, in the files' own proportion. All earlier labels are
-  reused; labelling the new ones is in progress, and the results will land here.
+- ✅ **Scaled up to 25,000 impressions.**
+  - That's 17,053 from MIND-small's training file and 7,947 from its validation file, in
+    the files' own proportion.
+  - The 6,020 earlier labels were reused at 0 calls, so only 40,519 new API calls were
+    needed, with 0 failures.
+  - Every label can be reproduced from the response cache with no new calls.
+
+  Full write-up: [`reports/R1_expanded_results.md`](reports/R1_expanded_results.md).
 
 ## 🗂️ The dataset
 
@@ -128,8 +139,8 @@ It's stored locally in `dataset/`, which is git-ignored and never pushed or shar
 
 | File | What's in it |
 |---|---|
-| `train.parquet` | impressions from MIND-small's training file |
-| `validation.parquet` | impressions from MIND-small's validation file |
+| `train.parquet` | 17,053 impressions from MIND-small's training file (631,219 rows) |
+| `validation.parquet` | 7,947 impressions from MIND-small's validation file (294,541 rows) |
 | `metadata.json` | scope, splits, schema, record-id ranges, method, API usage, checksums |
 
 Each file has exactly six columns:
