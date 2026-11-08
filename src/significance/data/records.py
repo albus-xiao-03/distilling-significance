@@ -10,6 +10,16 @@ A record is one decision episode: one MIND impression. Three disjoint record set
 - probe: N_PROBE_RECORDS further impressions of the training file's last day, disjoint from
   the selection records, for the small API feasibility checks only.
 
+Expanded scope (owner, 2026-11-08): the dataset holds N_DATASET_IMPRESSIONS impressions,
+split between the training and validation files in proportion to their sizes. Two more
+sets complete it, reusing every labelled record above:
+
+- evaluation_extra: more validation-file impressions, drawn uniformly from the ones not yet
+  drawn, so the validation part stays a uniform sample of the file;
+- training_extra: training-file impressions with a proportional quota per day (the
+  existing last-day selection and probe records count towards their day's quota), so the
+  training part is spread over the file's days like the file itself.
+
 `record_id` (C3) is the record's position in the seeded random draw, not MIND's impression
 id; the mapping to impression ids stays under .temp/work/. It is not anonymous: with MIND and
 this code the draw can be redone, and a record's presented set identifies its impression, so
@@ -18,6 +28,8 @@ anything keyed by it is MIND-derived data and is never distributed.
 
 from __future__ import annotations
 
+import math
+from collections.abc import Mapping
 from pathlib import Path
 
 import numpy as np
@@ -26,7 +38,8 @@ import pandas as pd
 from significance import config
 
 RECORD_COLUMNS = ["record_set", "record_id", "impression_id", "user_id", "time", "date", "split"]
-RECORD_SETS = ("evaluation", "selection", "probe")
+RECORD_SETS = ("evaluation", "selection", "probe", "evaluation_extra", "training_extra")
+EXTRA_SETS = ("evaluation_extra", "training_extra")
 
 
 def sample_records(pool: pd.DataFrame, n: int, seed: int, record_set: str) -> pd.DataFrame:
@@ -58,6 +71,64 @@ def build_record_sets(
     rest = last_day_pool[~last_day_pool["impression_id"].isin(selection["impression_id"])]
     probe = sample_records(rest, n_probe, seed + 2, "probe")
     return {"evaluation": evaluation, "selection": selection, "probe": probe}
+
+
+def split_counts(n_total: int, sizes: Mapping) -> dict:
+    """`n_total` apportioned over groups in proportion to `sizes` (largest remainder; ties
+    in the remainder go to the group listed first)."""
+    total = sum(sizes.values())
+    if total <= 0 or n_total < 0:
+        raise ValueError("sizes must sum to a positive number and n_total be >= 0")
+    exact = {k: n_total * v / total for k, v in sizes.items()}
+    counts = {k: math.floor(x) for k, x in exact.items()}
+    order = sorted(exact, key=lambda k: -(exact[k] - counts[k]))
+    for k in order[: n_total - sum(counts.values())]:
+        counts[k] += 1
+    return counts
+
+
+def build_extra_record_sets(
+    train: pd.DataFrame,
+    dev: pd.DataFrame,
+    existing: Mapping[str, pd.DataFrame],
+    *,
+    n_total: int = config.N_DATASET_IMPRESSIONS,
+    seed: int = config.SEED,
+) -> dict[str, pd.DataFrame]:
+    """The evaluation_extra and training_extra records: with the existing evaluation,
+    selection and probe records they make `n_total` impressions, split between the files
+    in proportion to their sizes, the training part with a proportional quota per day."""
+    files = split_counts(n_total, {"train": len(train), "dev": len(dev)})
+    taken = pd.concat([existing[k] for k in ("evaluation", "selection", "probe")])
+    have_dev = existing["evaluation"]
+    if files["dev"] < len(have_dev):
+        raise ValueError(
+            f"{len(have_dev)} existing validation records exceed the quota {files['dev']}"
+        )
+    pool = dev[~dev["impression_id"].isin(have_dev["impression_id"])]
+    evaluation_extra = sample_records(
+        pool, files["dev"] - len(have_dev), seed + 3, "evaluation_extra"
+    )
+
+    days = train.groupby("date").size().sort_index()
+    quotas = split_counts(files["train"], days.to_dict())
+    have_train = taken[taken["split"] == "train"]
+    parts = []
+    for i, (day, quota) in enumerate(quotas.items()):
+        have = have_train[have_train["date"] == day]
+        need = quota - len(have)
+        if need < 0:
+            raise ValueError(f"{day.date()}: {len(have)} existing records exceed the quota {quota}")
+        day_pool = train[
+            (train["date"] == day) & ~train["impression_id"].isin(have["impression_id"])
+        ]
+        rng = np.random.default_rng(seed + 10 + i)
+        parts.append(day_pool.iloc[rng.choice(len(day_pool), size=need, replace=False)])
+    drawn = pd.concat(parts)
+    # a seeded shuffle, so a record's position (its record_id) says nothing about its day
+    drawn = drawn.iloc[np.random.default_rng(seed + 4).permutation(len(drawn))]
+    training_extra = sample_records(drawn, len(drawn), seed + 5, "training_extra")
+    return {"evaluation_extra": evaluation_extra, "training_extra": training_extra}
 
 
 def records_path(work: Path, record_set: str) -> Path:
