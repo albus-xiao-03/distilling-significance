@@ -1,8 +1,8 @@
 # Data card: MIND attention pseudo-labels (R1)
 
-> **Status:** the dataset has **not been generated yet**. The method below is implemented and
-> tested; the BehaviorGPT run that produces the labels waits for the owner's approval. The
-> results section is filled in after that run. This card holds no data.
+> **Status:** generated locally on 2026-11-08: 5,000 records, variant V1o. The file is
+> git-ignored and has not been distributed. This card holds no data; the full results are in
+> [`reports/R1_results.md`](reports/R1_results.md).
 
 ## What the labels mean
 
@@ -79,7 +79,8 @@ MIND-derived data and is never distributed.
      headline that was not attended is left out of the Order.
    - **V3:** adds the current screen. It failed its go/no-go probe and is not used.
 
-   The variant with the best mean per-record AUC on the 1,000 selection records is used.
+   The variant with the best mean per-record AUC on the 1,000 selection records is used:
+   **V1o** (AUC 0.600, against 0.599 for V1 and 0.569 for V2).
 3. **History cap.** BehaviorGPT reads only about the last 256 events of a history (measured
    in Phase 0). Histories are therefore capped at *K* = 256 events, current session included.
    The most recent sessions are kept whole.
@@ -101,21 +102,39 @@ BehaviorGPT itself is unchanged: there is no fine-tuning or training of any kind
 
 ## Evaluation results
 
-*Pending the approved run.* These will be filled in from `scripts/05_evaluate.py` and
-`scripts/07_distil.py`, aggregates only:
+These are on the 5,000 evaluation records, against the real decisions, with 95 % bootstrap
+intervals over persons. The full tables are in [`reports/R1_results.md`](reports/R1_results.md).
 
-- **E1:** per-record AUC, MRR, nDCG@5 and @10 against the real decisions, with 95 % CIs from
-  a bootstrap over persons.
-- **E2:** precision, recall, F1, accuracy and Cohen's κ; the error in *k*; oracle-*k*
-  precision.
-- **E3:** the contribution of previous decisions (with against without history), of the
-  observation sequence (V2 against V1) and of the decision event (V1o against V1). Results
-  are reported by stratum (earlier impressions / History clicks only).
-- **Baselines:** random, popularity (earlier click rate), recency and content similarity, all
-  with the same *k* rule.
-- **E4:** a logistic-regression student trained on the pseudo-labels against the same
-  student trained on real decisions, evaluated on the real decisions of held-out persons.
-  Recovery = (AUC_pseudo − 0.5) / (AUC_real − 0.5).
+| Predictor | Per-record AUC | F1 | κ |
+|---|---|---|---|
+| **BehaviorGPT V1o (these labels)** | **0.600** [0.591, 0.609] | 0.130 | 0.098 |
+| BehaviorGPT V1o, empty history | 0.523 [0.514, 0.531] | 0.081 | 0.047 |
+| Popularity (earlier click rate) | 0.658 [0.650, 0.666] | 0.155 | 0.124 |
+| Content similarity | 0.557 [0.548, 0.565] | 0.126 | 0.093 |
+| Recency | 0.510 [0.502, 0.517] | 0.066 | 0.032 |
+| Random | 0.500 [0.491, 0.508] | 0.080 | 0.046 |
+
+- **Decisions.**
+  - precision 0.149, recall 0.115, accuracy 0.937;
+  - the *k* rule matches the true number of clicks in 69.7 % of records;
+  - told the true count, precision would be 0.158, so the ranking, not the count, limits the
+    labels.
+- **Contributions (E3).**
+  - previous decisions +0.078 AUC (with against without history);
+  - writing the ignored headlines (V2) −0.029 against V1 (selection records);
+  - the order event +0.001.
+- **By stratum.** AUC 0.597 with earlier impressions, 0.603 with History clicks only, 0.527
+  without previous decisions.
+- **Distillation (E4).** A student trained on these labels reaches per-record AUC 0.580 on
+  held-out persons' real decisions, against 0.694 when trained on the real decisions.
+  - Recovery 0.41 [0.32, 0.49], below the 50 % target.
+  - A student trained on popularity labels recovers 0.81.
+- **Reproducibility.** Re-decoding every record from the response cache, with no API calls,
+  gives identical labels.
+
+**In short:** the labels carry a real, history-driven attention signal: clearly above chance
+and content similarity, but below the popularity baseline. They distil less than half of what
+real labels teach.
 
 ## Limitations
 
