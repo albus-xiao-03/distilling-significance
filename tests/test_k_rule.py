@@ -16,6 +16,8 @@ from significance import episodes as E
         (30, 100, 5, 2),  # 1.5 -> 2
         (4, 10, 10, 4),  # rate 1 -> all, never more than n
         (3, 2, 2, 3),
+        (47, 94, 3, 2),  # 3/94 * 47 = 1.5 exactly; floating point would give 1
+        (45, 10, 7, 32),  # 31.5 exactly -> 32
     ],
 )
 def test_attention_k(n, pres, att, k):

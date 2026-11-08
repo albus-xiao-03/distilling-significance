@@ -21,7 +21,6 @@ The real decisions are stored in a separate evaluation table, never in an Episod
 from __future__ import annotations
 
 import json
-import math
 import random
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
@@ -321,8 +320,9 @@ def attention_k(n_presented: int, earlier_presented: int, earlier_attended: int)
         raise ValueError("earlier counts must satisfy 0 <= attended <= presented")
     if earlier_presented == 0:
         return 1
-    rate = earlier_attended / earlier_presented
-    return min(n_presented, max(1, math.floor(rate * n_presented + 0.5)))
+    # round(a * n) half up, in integers: floats turn e.g. 3/94 * 47 = 1.5 into 1.4999...
+    half_up = (2 * earlier_attended * n_presented + earlier_presented) // (2 * earlier_presented)
+    return min(n_presented, max(1, half_up))
 
 
 def episode_k(episode: Episode) -> int:
