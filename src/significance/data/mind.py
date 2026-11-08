@@ -85,7 +85,12 @@ def download_split(split: str, raw_dir: Path, token: str, *, downloader=None) ->
         )
     target.mkdir(parents=True, exist_ok=True)
     if downloader is None:
+        import huggingface_hub.constants
         from huggingface_hub import hf_hub_download as downloader
+
+        # Plain HTTPS through the hub's CDN redirect, the path verified for this sandbox.
+        # The Xet transfer protocol would need another host (cas-server.xethub.hf.co).
+        huggingface_hub.constants.HF_HUB_DISABLE_XET = True
     path = Path(
         downloader(
             config.MIND_REPO,
