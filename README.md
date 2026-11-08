@@ -105,7 +105,7 @@ ruff check . && ruff format --check .
 
 - **No data in this repository.** The repository contains no MIND data and no label files.
   Raw data, catalogs, decision episodes, caches, real decisions and pseudo-labels stay in
-  git-ignored folders (`.temp/`, `outputs/`) and are never committed or pushed.
+  git-ignored folders (`.temp/`, `dataset/`, `outputs/`) and are never committed or pushed.
 - **MIND belongs to Microsoft.** The Microsoft News Dataset (MIND) is licensed under the
   [Microsoft Research License Terms](https://github.com/msnews/MIND/blob/master/MSR%20License_Data.pdf):
   - use for non-commercial, non-revenue-generating research only;
@@ -134,7 +134,7 @@ ruff check . && ruff format --check .
 | MIND downloads, extracted files and the Hugging Face cache | `.temp/data/` |
 | Catalog files, decision episodes, record tables, real decisions (evaluation tables) and predictions | `.temp/data/`, `.temp/work/` |
 | The BehaviorGPT response cache | `.temp/cache/` |
-| Generated label datasets | `outputs/` |
+| The generated label dataset (and the superseded first version, if present) | `dataset/` (`outputs/`) |
 | The project's own Unbox AI catalog (`mind_small_headlines`) | Unbox AI, under the owner's key |
 
 Shared catalogs and catalogs this project did not create are never touched.
@@ -155,7 +155,7 @@ python -I scripts/delete_data.py --confirm  # deletes it
 
 Manual equivalent, if the script cannot run:
 
-1. Delete the folders `.temp/data/`, `.temp/work/`, `.temp/cache/` and `outputs/`.
+1. Delete the folders `.temp/data/`, `.temp/work/`, `.temp/cache/`, `dataset/` and `outputs/`.
 2. Delete the project's catalog with the Unbox AI SDK. List the key's catalogs, then delete the
    one that is `owned` and named `mind_small_headlines`:
    ```python
