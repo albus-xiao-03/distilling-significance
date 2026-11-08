@@ -221,3 +221,6 @@ __marimo__/
 
 # Temporary files (see CONSTRICTION.md)
 .temp/
+
+# Generated label datasets: never committed (plans/R1.md, sections 2 and 7.1)
+outputs/
