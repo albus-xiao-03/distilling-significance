@@ -45,6 +45,34 @@ def require_approval(record_set: str, approved: bool) -> None:
         )
 
 
+def variants_for_run(
+    record_set: str, requested: Sequence[str] | None, chosen: str | None
+) -> list[str]:
+    """The variants a run decodes. The evaluation records run the chosen variant only
+    (D16, and the request budget): it is the default there, and anything else is refused.
+    Other sets run the requested variants, by default V1, V1o and V2."""
+    names = list(requested) if requested else None
+    if record_set == "evaluation":
+        if chosen is None:
+            raise ValueError("no variant chosen yet: run the selection records, then `select`")
+        resolved = [chosen if n == "chosen" else n for n in (names or ["chosen"])]
+        if resolved != [chosen]:
+            raise ValueError(
+                f"the evaluation records run the chosen variant only ({chosen}), "
+                f"not {', '.join(resolved)}"
+            )
+        return resolved
+    resolved = names or list(config.DEFAULT_VARIANTS)
+    if "chosen" in resolved:
+        if chosen is None:
+            raise ValueError("no variant chosen yet")
+        resolved = [chosen if n == "chosen" else n for n in resolved]
+    unknown = [v for v in resolved if v not in config.VARIANTS]
+    if unknown:
+        raise ValueError(f"unknown variant(s): {', '.join(unknown)}")
+    return resolved
+
+
 def load_set(work: Path, record_set: str) -> tuple[list[E.Episode], pd.DataFrame, pd.DataFrame]:
     """(episodes, real decisions, records) of a record set."""
     eps = E.load_episodes(E.episodes_dir(work) / f"{record_set}.jsonl")

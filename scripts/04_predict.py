@@ -40,21 +40,16 @@ def make_teacher(p, *, rate: float | None, offline: bool = False) -> Teacher:
     )
 
 
-def chosen_variant(p) -> str:
+def chosen_variant(p) -> str | None:
     path = p.work / "selection" / "choice.json"
-    if not path.is_file():
-        sys.exit("no variant chosen yet: run the selection records, then `select`")
-    return json.loads(path.read_text())["chosen"]
+    return json.loads(path.read_text())["chosen"] if path.is_file() else None
 
 
-def resolve_variants(p, names) -> list[str]:
-    out = []
-    for name in names:
-        out.append(chosen_variant(p) if name == "chosen" else name)
-    for v in out:
-        if v not in config.VARIANTS:
-            sys.exit(f"unknown variant {v}")
-    return out
+def resolve_variants(p, record_set: str, names) -> list[str]:
+    try:
+        return runner.variants_for_run(record_set, names, chosen_variant(p))
+    except ValueError as exc:
+        sys.exit(str(exc))
 
 
 def cmd_estimate(p, args) -> None:
@@ -62,11 +57,10 @@ def cmd_estimate(p, args) -> None:
     report = {}
     for record_set in args.set:
         eps, _, _ = runner.load_set(p.work, record_set)
-        variants = (
-            resolve_variants(p, args.variants)
-            if args.variants
-            else (list(config.DEFAULT_VARIANTS) if record_set != "evaluation" else ["<chosen>"])
-        )
+        if args.variants:
+            variants = resolve_variants(p, record_set, args.variants)
+        else:
+            variants = list(config.DEFAULT_VARIANTS) if record_set != "evaluation" else ["<chosen>"]
         if variants == ["<chosen>"]:
             # one variant runs on the evaluation records; V1/V1o/V2 need the same requests
             report[record_set] = runner.estimate(eps, ["V1"], teacher=teacher)
@@ -81,7 +75,7 @@ def cmd_estimate(p, args) -> None:
 
 def cmd_run(p, args) -> None:
     runner.require_approval(args.set, args.approved)
-    variants = resolve_variants(p, args.variants or config.DEFAULT_VARIANTS)
+    variants = resolve_variants(p, args.set, args.variants)
     if "V3" in variants and not args.allow_v3:
         sys.exit("V3 failed its Phase 0 go/no-go probe; pass --allow-v3 to run it anyway")
     eps, _, _ = runner.load_set(p.work, args.set)
@@ -156,7 +150,11 @@ def main() -> None:
     e.add_argument("--empty-history", action="store_true")
     r = sub.add_parser("run", help="decode a record set")
     r.add_argument("--set", required=True, choices=["selection", "evaluation", "probe"])
-    r.add_argument("--variants", nargs="+", help="V1 V1o V2 V3 or 'chosen'")
+    r.add_argument(
+        "--variants",
+        nargs="+",
+        help="V1 V1o V2 V3 or 'chosen'; the evaluation records run the chosen one only",
+    )
     r.add_argument("--empty-history", action="store_true", help="E3a: no previous decisions")
     r.add_argument("--limit", type=int, help="only the first N records")
     r.add_argument("--workers", type=int, default=8)

@@ -94,3 +94,22 @@ def test_with_decisions_requires_full_coverage(mind_frames):
     extra = pd.concat([pred, pred.iloc[:1].assign(news_id="N_unknown")])
     with pytest.raises(ValueError):
         runner.with_decisions(extra, dec)
+
+
+def test_evaluation_runs_the_chosen_variant_only():
+    assert runner.variants_for_run("evaluation", None, "V1o") == ["V1o"]
+    assert runner.variants_for_run("evaluation", ["chosen"], "V1o") == ["V1o"]
+    assert runner.variants_for_run("evaluation", ["V1o"], "V1o") == ["V1o"]
+    for bad in (["V1"], ["V1", "V1o"], ["chosen", "V2"]):
+        with pytest.raises(ValueError, match="chosen variant only"):
+            runner.variants_for_run("evaluation", bad, "V1o")
+    with pytest.raises(ValueError, match="no variant chosen"):
+        runner.variants_for_run("evaluation", None, None)
+
+
+def test_other_sets_default_to_v1_v1o_v2():
+    assert runner.variants_for_run("selection", None, None) == ["V1", "V1o", "V2"]
+    assert runner.variants_for_run("probe", ["V3"], None) == ["V3"]
+    assert runner.variants_for_run("probe", ["chosen"], "V2") == ["V2"]
+    with pytest.raises(ValueError, match="unknown"):
+        runner.variants_for_run("probe", ["V9"], None)
