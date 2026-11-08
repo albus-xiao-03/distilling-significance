@@ -21,11 +21,14 @@ The real decisions are stored in a separate evaluation table, never in an Episod
 from __future__ import annotations
 
 import json
+import random
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import pandas as pd
+
+from significance import config
 
 
 @dataclass(frozen=True)
@@ -165,3 +168,139 @@ def load_episodes(path: Path) -> list[Episode]:
             d["presented"] = tuple(d["presented"])
             out.append(Episode(**d))
     return out
+
+
+# --- representation variants (plans/R1.md 5.4) --------------------------------------
+#
+# Events are written as plain tuples, ("view", news_id) or ("order", (news_id, ...)); the
+# teacher turns them into SDK View/Order events. An attention decision "attend" is the
+# person's action on the observation; "not attend" is the documented way of expressing a
+# non-choice: leaving the observation out (V1, V1o) or leaving its View out of the Order
+# (V2, V3) (plans/R1.md L4).
+#
+#   V1   earlier episode -> View each attended observation
+#   V1o  earlier episode -> View each attended observation, then Order them
+#   V2   earlier episode -> View every presented observation, then Order the attended ones
+#   V3   V2's history plus the current screen as Views; predict="purchase" (Phase 0: no-go)
+#
+# The History clicks have no presented set: they are Views (V1), or Views then one Order of
+# them (V1o, V2, V3), like an episode in which every observation was attended.
+#
+# During next-action decoding the observations BehaviorGPT has chosen so far form the
+# current session in the same form: V1 views them; V1o and V2 view them and then order them.
+# Candidates of the current record never enter its history (except V3's screen).
+
+Event = tuple[str, "str | tuple[str, ...]"]
+Session = list[Event]
+ORDER_VARIANTS = frozenset({"V1o", "V2", "V3"})
+ALL_VARIANTS = ("V1", "V1o", "V2", "V3")
+
+
+def check_variant(variant: str) -> str:
+    if variant not in ALL_VARIANTS:
+        raise ValueError(f"unknown variant {variant!r}; expected one of {ALL_VARIANTS}")
+    return variant
+
+
+def _observations(ep: EarlierEpisode, variant: str) -> list[tuple[str, bool]]:
+    """An earlier episode as (observation, attended) pairs in the variant's form."""
+    if variant in ("V1", "V1o") or ep.presented is None:
+        return [(a, True) for a in ep.attended]
+    attended = set(ep.attended)
+    return [(p, p in attended) for p in ep.presented]
+
+
+def _render(obs: Sequence[tuple[str, bool]], with_order: bool) -> Session:
+    events: Session = [("view", x) for x, _ in obs]
+    attended = tuple(x for x, a in obs if a)
+    if with_order and attended:
+        events.append(("order", attended))
+    return events
+
+
+def _fit(obs: Sequence[tuple[str, bool]], with_order: bool, budget: int) -> Session:
+    """The session cut to at most `budget` events: the oldest not-attended observations
+    are dropped first, then the oldest attended ones; an Order lists the attended
+    observations that stay."""
+    has_order = with_order and any(a for _, a in obs)
+    room = budget - (1 if has_order else 0)
+    if room <= 0:
+        return []
+    keep = list(obs)
+    while len(keep) > room:
+        keep.pop(next((j for j, (_, a) in enumerate(keep) if not a), 0))
+    return _render(keep, with_order)
+
+
+def previous_sessions(episode: Episode, variant: str, budget: int) -> list[Session]:
+    """The episode's previous decisions in `variant`'s form, oldest first, in at most
+    `budget` events: the most recent sessions are kept whole, the first one that does not
+    fit is cut (`_fit`), and older ones are dropped (plans/R1.md 5.4, limit L10)."""
+    check_variant(variant)
+    with_order = variant in ORDER_VARIANTS
+    out: list[Session] = []
+    remaining = budget
+    for ep in reversed(episode.previous):
+        obs = _observations(ep, variant)
+        if not obs:
+            continue
+        full = _render(obs, with_order)
+        if len(full) <= remaining:
+            out.append(full)
+            remaining -= len(full)
+            continue
+        cut = _fit(obs, with_order, remaining)
+        if cut:
+            out.append(cut)
+        break
+    out.reverse()
+    return out
+
+
+def current_session(variant: str, chosen: Sequence[str]) -> Session:
+    """The current session once BehaviorGPT has chosen `chosen` (V1, V1o, V2)."""
+    check_variant(variant)
+    if variant == "V3":
+        raise ValueError("V3's current session is the screen: use screen_session")
+    events: Session = [("view", x) for x in chosen]
+    if variant in ORDER_VARIANTS and chosen:
+        events.append(("order", tuple(chosen)))
+    return events
+
+
+def screen_session(episode: Episode) -> Session:
+    """V3: the current presented observations as Views, in an order seeded by the record
+    (MIND's own presented order is shuffled and carries no position)."""
+    order = list(episode.presented)
+    random.Random(f"{episode.record_set}:{episode.record_id}").shuffle(order)
+    return [("view", x) for x in order]
+
+
+def current_budget(variant: str, k: int, n: int) -> int:
+    """The most events the current session holds: at the last of k decoding steps for V1,
+    V1o and V2 (k - 1 chosen, plus their Order); the whole screen for V3."""
+    check_variant(variant)
+    if variant == "V3":
+        return n
+    chosen = max(k - 1, 0)
+    return chosen + (1 if variant in ORDER_VARIANTS and chosen else 0)
+
+
+def history_for(
+    episode: Episode,
+    variant: str,
+    k: int,
+    *,
+    max_events: int = config.MAX_HISTORY_EVENTS,
+    empty_history: bool = False,
+) -> list[Session]:
+    """The previous sessions sent for this record: capped so that they and the largest
+    current session fit in `max_events` (K). `empty_history` drops them (E3a)."""
+    if empty_history:
+        return []
+    budget = max_events - current_budget(variant, k, episode.n)
+    return previous_sessions(episode, variant, max(budget, 0))
+
+
+def count_events(sessions: Iterable[Session]) -> int:
+    return sum(len(s) for s in sessions)
