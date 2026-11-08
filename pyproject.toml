@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "significance"
+version = "0.1.0"
+description = "R1: BehaviorGPT's predicted human attention decisions on MIND-small as pseudo-labels"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13"
+# Exact versions are pinned in requirements.txt; install that first, then this package
+# with --no-deps (see below).
+dependencies = [
+    "behaviorgpt>=0.10",
+    "numpy>=2.5",
+    "pandas>=3.1",
+    "pyarrow>=26",
+    "huggingface_hub>=2.4",
+    "scikit-learn>=1.9",
+    "scipy>=1.18",
+]
+
+# Editable install into the project venv, so that scripts run in isolated mode
+# (python -I ignores PYTHONPATH and the script's own folder) can import the package:
+#   source .temp/env_setup/devenv.sh
+#   python -m pip install --no-deps -e .
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "BLE", "UP", "SIM", "RUF"]
