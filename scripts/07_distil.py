@@ -25,7 +25,7 @@ from significance import baselines as B
 from significance import config, runner
 from significance import episodes as E
 from significance import student as S
-from significance.data import mind
+from significance.data import mind, records
 
 
 def fmt(est: dict) -> str:
@@ -35,7 +35,11 @@ def fmt(est: dict) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="E4 distillation")
-    ap.add_argument("--set", default="evaluation", choices=["evaluation", "selection", "probe"])
+    ap.add_argument(
+        "--set",
+        default="evaluation",
+        choices=["evaluation", "selection", "probe", *records.VIEW_SETS],
+    )
     ap.add_argument("--variant", help="pseudo-label variant (default: the chosen one)")
     ap.add_argument("--n-boot", type=int, default=1000)
     args = ap.parse_args()

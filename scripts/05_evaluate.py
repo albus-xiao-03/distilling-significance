@@ -28,7 +28,7 @@ from significance import config, runner
 from significance import episodes as E
 from significance import evaluate as M
 from significance import experiment as X
-from significance.data import mind
+from significance.data import mind, records
 
 
 def fmt(est: dict) -> str:
@@ -76,7 +76,11 @@ def markdown(results: dict) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Evaluate predicted attention decisions (E1-E3)")
-    ap.add_argument("--set", default="evaluation", choices=["evaluation", "selection", "probe"])
+    ap.add_argument(
+        "--set",
+        default="evaluation",
+        choices=["evaluation", "selection", "probe", *records.VIEW_SETS],
+    )
     ap.add_argument("--n-boot", type=int, default=1000)
     args = ap.parse_args()
     p = config.paths()
