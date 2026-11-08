@@ -2,6 +2,9 @@
 
     source .temp/env_setup/devenv.sh
     python -I scripts/08_expand.py records   # draw the extra records, build their episodes
+    (label them: 04_predict.py run --set evaluation_extra / training_extra --approved, and
+     evaluation_extra with --empty-history for E3a)
+    python -I scripts/08_expand.py views     # assemble the dataset views (no API call)
 
 The dataset reuses every labelled record (5,000 evaluation records from the validation
 file; 1,000 selection and 20 probe records from the training file's last day) and adds:
@@ -21,7 +24,7 @@ import json
 
 import numpy as np
 
-from significance import config
+from significance import config, expansion
 from significance import episodes as E
 from significance.data import mind, records
 from significance.teacher.decode import requests_needed
@@ -90,13 +93,20 @@ def cmd_records(p) -> None:
     print(json.dumps(report, indent=1))
 
 
+def cmd_views(p) -> None:
+    choice = json.loads((p.work / "selection" / "choice.json").read_text())["chosen"]
+    facts = expansion.build_views(p.work, choice)
+    print(json.dumps(facts, indent=1))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Expanded 25,000-impression dataset")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("records", help="draw the extra records and build their episodes")
+    sub.add_parser("views", help="assemble the dataset views from the labelled sets")
     args = ap.parse_args()
     p = config.paths()
-    {"records": cmd_records}[args.cmd](p)
+    {"records": cmd_records, "views": cmd_views}[args.cmd](p)
 
 
 if __name__ == "__main__":
