@@ -7,10 +7,11 @@ people made on news headlines: which of the headlines shown to them they chose t
 predictions become **pseudo-labels** for supervised learning, and they are measured against
 the real decisions. The plan is [`plans/R1.md`](plans/R1.md).
 
-> **Status:** the R1 pipeline is implemented and tested, the MIND headline catalog is
-> uploaded, and small API checks pass ([`reports/feasibility.md`](reports/feasibility.md)).
-> The full-scale BehaviorGPT run (20,348 ranking requests) waits for the owner's approval. No
-> labels exist yet.
+> **Status:** R1 is complete. The pseudo-label dataset was generated locally (5,000
+> records; git-ignored, not distributed). Results: [`reports/R1_results.md`](reports/R1_results.md).
+> BehaviorGPT's predicted decisions reach AUC 0.600 against the real ones: above chance and
+> content similarity, below popularity (0.658). Feasibility facts:
+> [`reports/feasibility.md`](reports/feasibility.md).
 
 ## How it works
 
