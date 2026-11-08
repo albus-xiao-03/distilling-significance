@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-labelledby="dlogo-title dlogo-desc">
+  <title id="dlogo-title">MIND attention pseudo-labels dataset logo</title>
+  <desc id="dlogo-desc">Stacked headline cards; one headline is highlighted and ticked: a predicted attention decision.</desc>
+  <defs>
+    <linearGradient id="dlogo-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0EA5E9"/>
+      <stop offset="1" stop-color="#14B8A6"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#dlogo-bg)"/>
+  <rect x="34" y="22" width="64" height="74" rx="9" fill="#fff" opacity=".45" transform="rotate(-9 66 59)"/>
+  <rect x="30" y="30" width="68" height="76" rx="9" fill="#fff"/>
+  <rect x="40" y="42" width="36" height="7" rx="3.5" fill="#94A3B8"/>
+  <rect x="40" y="56" width="48" height="7" rx="3.5" fill="#FBBF24"/>
+  <rect x="40" y="70" width="42" height="7" rx="3.5" fill="#CBD5E1"/>
+  <rect x="40" y="84" width="28" height="7" rx="3.5" fill="#CBD5E1"/>
+  <circle cx="96" cy="96" r="15" fill="#F59E0B" stroke="#fff" stroke-width="4"/>
+  <path d="M89 96 l5 5 9 -10" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

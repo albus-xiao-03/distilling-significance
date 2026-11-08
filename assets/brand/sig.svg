@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-labelledby="sig-title sig-desc">
+  <title id="sig-title">Sig, the distilling-significance mascot</title>
+  <desc id="sig-desc">A round amber droplet with big shiny eyes, rosy cheeks, a happy smile and a sparkle by its tip.</desc>
+  <defs>
+    <radialGradient id="sig-body" cx="40%" cy="38%" r="75%">
+      <stop offset="0" stop-color="#FEF3C7"/>
+      <stop offset=".45" stop-color="#FCD34D"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </radialGradient>
+  </defs>
+  <circle cx="100" cy="104" r="92" fill="#EDE9FE" stroke="#C4B5FD" stroke-width="4"/>
+  <path d="M100 24 C118 52 160 82 160 124 A60 60 0 0 1 40 124 C40 82 82 52 100 24 Z" fill="url(#sig-body)" stroke="#B45309" stroke-width="4" stroke-linejoin="round"/>
+  <ellipse cx="68" cy="98" rx="8" ry="15" transform="rotate(28 68 98)" fill="#fff" opacity=".8"/>
+  <ellipse cx="80" cy="128" rx="12" ry="15" fill="#1F2937"/>
+  <ellipse cx="120" cy="128" rx="12" ry="15" fill="#1F2937"/>
+  <circle cx="84.5" cy="122" r="5" fill="#fff"/>
+  <circle cx="124.5" cy="122" r="5" fill="#fff"/>
+  <circle cx="76" cy="134" r="2.2" fill="#fff"/>
+  <circle cx="116" cy="134" r="2.2" fill="#fff"/>
+  <ellipse cx="62" cy="150" rx="10" ry="6" fill="#FB7185" opacity=".55"/>
+  <ellipse cx="138" cy="150" rx="10" ry="6" fill="#FB7185" opacity=".55"/>
+  <path d="M90 151 Q100 161 110 151" fill="none" stroke="#1F2937" stroke-width="4" stroke-linecap="round"/>
+  <path d="M140 28 l3.5 9 9 3.5 -9 3.5 -3.5 9 -3.5 -9 -9 -3.5 9 -3.5 Z" fill="#FDE68A" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="160" cy="62" r="3.5" fill="#FBBF24"/>
+  <circle cx="44" cy="48" r="2.5" fill="#A78BFA"/>
+</svg>

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-labelledby="logo-title logo-desc">
+  <title id="logo-title">distilling-significance logo</title>
+  <desc id="logo-desc">A flask catching a glowing amber drop: significance, distilled.</desc>
+  <defs>
+    <linearGradient id="logo-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#9333EA"/>
+    </linearGradient>
+    <linearGradient id="logo-amber" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDE68A"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+    <clipPath id="logo-flask">
+      <path d="M55 46 V30 h18 v16 l24 44 a8 8 0 0 1 -7 12 H38 a8 8 0 0 1 -7 -12 Z"/>
+    </clipPath>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#logo-bg)"/>
+  <g clip-path="url(#logo-flask)">
+    <path d="M20 76 q11 -7 22 0 t22 0 t22 0 t22 0 V110 H20 Z" fill="url(#logo-amber)"/>
+    <circle cx="52" cy="90" r="3.5" fill="#fff" opacity=".75"/>
+    <circle cx="70" cy="85" r="2.5" fill="#fff" opacity=".75"/>
+    <circle cx="79" cy="94" r="2" fill="#fff" opacity=".75"/>
+  </g>
+  <path d="M55 46 V30 h18 v16 l24 44 a8 8 0 0 1 -7 12 H38 a8 8 0 0 1 -7 -12 Z" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M50 30 h28" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+  <path d="M64 44 C67.5 49.5 70 52.5 70 56 a6 6 0 0 1 -12 0 c0 -3.5 2.5 -6.5 6 -12 Z" fill="url(#logo-amber)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M55 72 q9 -5 18 0" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".9"/>
+  <path d="M64 14 v8 M57 18 l2.5 4.5 M71 18 l-2.5 4.5" stroke="#FDE68A" stroke-width="3" stroke-linecap="round"/>
+  <path d="M97 14 l2.5 6.5 6.5 2.5 -6.5 2.5 -2.5 6.5 -2.5 -6.5 -6.5 -2.5 6.5 -2.5 Z" fill="#FDE68A"/>
+  <circle cx="30" cy="22" r="2.5" fill="#FDE68A" opacity=".9"/>
+</svg>
