@@ -104,7 +104,7 @@ def cmd_run(p, args) -> None:
         )
         facts["record_set"] = args.set
         facts["limit"] = args.limit
-        path = runner.predictions_path(p.work, args.set, variant, args.empty_history)
+        path = runner.predictions_path(p.work, args.set, variant, args.empty_history, args.limit)
         runner.save_predictions(rows, facts, path)
         print(json.dumps(facts, indent=1))
         print(f"-> {path.relative_to(p.root)}")

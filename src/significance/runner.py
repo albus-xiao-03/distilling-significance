@@ -80,8 +80,12 @@ def load_set(work: Path, record_set: str) -> tuple[list[E.Episode], pd.DataFrame
     return eps, decisions, R.load_records(work, record_set)
 
 
-def predictions_path(work: Path, record_set: str, variant: str, empty_history: bool) -> Path:
-    suffix = "_empty" if empty_history else ""
+def predictions_path(
+    work: Path, record_set: str, variant: str, empty_history: bool, limit: int | None = None
+) -> Path:
+    """Where a run's predictions go. A run limited to the first N records writes its own
+    file (`..._firstN`), which the selection, evaluation and dataset steps never read."""
+    suffix = ("_empty" if empty_history else "") + (f"_first{limit}" if limit else "")
     return work / "predictions" / record_set / f"{variant}{suffix}.parquet"
 
 

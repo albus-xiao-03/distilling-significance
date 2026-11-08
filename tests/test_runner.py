@@ -113,3 +113,12 @@ def test_other_sets_default_to_v1_v1o_v2():
     assert runner.variants_for_run("probe", ["chosen"], "V2") == ["V2"]
     with pytest.raises(ValueError, match="unknown"):
         runner.variants_for_run("probe", ["V9"], None)
+
+
+def test_limited_runs_never_overwrite_full_prediction_files(tmp_path):
+    full = runner.predictions_path(tmp_path, "selection", "V1", False)
+    limited = runner.predictions_path(tmp_path, "selection", "V1", False, limit=50)
+    empty_limited = runner.predictions_path(tmp_path, "selection", "V1", True, limit=50)
+    assert full.name == "V1.parquet" and limited.name == "V1_first50.parquet"
+    assert empty_limited.name == "V1_empty_first50.parquet"
+    assert len({full, limited, empty_limited}) == 3
