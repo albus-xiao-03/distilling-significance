@@ -21,6 +21,7 @@ The real decisions are stored in a separate evaluation table, never in an Episod
 from __future__ import annotations
 
 import json
+import math
 import random
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
@@ -304,3 +305,25 @@ def history_for(
 
 def count_events(sessions: Iterable[Session]) -> int:
     return sum(len(s) for s in sessions)
+
+
+# --- how many observations get attention: k (plans/R1.md 6.3, limit L3, decision N5) --
+
+
+def attention_k(n_presented: int, earlier_presented: int, earlier_attended: int) -> int:
+    """k = max(1, round(a * n)), with a the person's own attention rate in their earlier
+    episodes (attended / presented) and n the observations presented now; k = 1 without
+    earlier episodes. Rounds half up (not Python's half-to-even) and never exceeds n.
+    Uses previous decisions only, never the episode being predicted."""
+    if n_presented < 1:
+        raise ValueError("an episode presents at least one observation")
+    if earlier_presented < 0 or not 0 <= earlier_attended <= earlier_presented:
+        raise ValueError("earlier counts must satisfy 0 <= attended <= presented")
+    if earlier_presented == 0:
+        return 1
+    rate = earlier_attended / earlier_presented
+    return min(n_presented, max(1, math.floor(rate * n_presented + 0.5)))
+
+
+def episode_k(episode: Episode) -> int:
+    return attention_k(episode.n, episode.earlier_presented, episode.earlier_attended)
