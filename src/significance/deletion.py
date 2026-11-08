@@ -4,7 +4,8 @@ Deletes the project's MIND-derived data and its own Unbox AI catalog:
 
 - local: .temp/data/ (downloads, extracted files, HF cache, catalog files), .temp/work/
   (records, episodes, real decisions, predictions, evaluation tables), .temp/cache/ (the
-  BehaviorGPT response cache) and outputs/ (the label dataset);
+  BehaviorGPT response cache), dataset/ (the label dataset) and outputs/ (where the first,
+  superseded dataset was written);
 - remote: the catalog that this API key owns and that is named mind_small_headlines.
 
 Shared catalogs and catalogs with any other name are never touched. Only those fixed
@@ -20,7 +21,7 @@ from pathlib import Path
 
 from significance import config
 
-LOCAL_TARGETS = (".temp/data", ".temp/work", ".temp/cache", "outputs")
+LOCAL_TARGETS = (".temp/data", ".temp/work", ".temp/cache", "dataset", "outputs")
 
 
 @dataclass

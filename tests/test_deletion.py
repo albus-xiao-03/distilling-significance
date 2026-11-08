@@ -41,6 +41,7 @@ def _project(tmp_path):
         ".temp/data/raw",
         ".temp/work/records",
         ".temp/cache",
+        "dataset",
         "outputs",
         ".temp/env_setup",
         "src",
@@ -57,7 +58,7 @@ def test_dry_run_lists_and_deletes_nothing(tmp_path):
     root = _project(tmp_path)
     client = FakeClient(CATALOGS)
     report = deletion.run(root, client)
-    assert report.local == [".temp/data", ".temp/work", ".temp/cache", "outputs"]
+    assert report.local == [".temp/data", ".temp/work", ".temp/cache", "dataset", "outputs"]
     assert report.catalogs == [f"{config.CATALOG_NAME} (cat_mine)"]
     assert client.deleted == []
     assert (root / ".temp/data/raw/x.zip").exists()
