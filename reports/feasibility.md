@@ -97,8 +97,8 @@ The probe records are disjoint from the selection and evaluation records.
 
 - **What was checked.** The pipeline runs end to end, and every presented headline comes back
   scored.
-- **Metric values are not reported.** On 20 records they carry no information. The random
-  baseline alone moved its AUC by ±0.15 between record sets of this size.
+- **Metric values are not reported.** On 20 records they carry no information: even the
+  random baseline scored an AUC of 0.65 there, about 2 standard errors above 0.5.
 
 ## 5. Request budget for the full-scale run (exact)
 

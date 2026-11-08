@@ -10,8 +10,10 @@ A record is one decision episode: one MIND impression. Three disjoint record set
 - probe: N_PROBE_RECORDS further impressions of the training file's last day, disjoint from
   the selection records, for the small API feasibility checks only.
 
-`record_id` is opaque (C3): the record's position in the seeded random draw, unrelated to
-MIND's impression id, user or time. The mapping to impression ids stays under .temp/work/.
+`record_id` (C3) is the record's position in the seeded random draw, not MIND's impression
+id; the mapping to impression ids stays under .temp/work/. It is not anonymous: with MIND and
+this code the draw can be redone, and a record's presented set identifies its impression, so
+anything keyed by it is MIND-derived data and is never distributed.
 """
 
 from __future__ import annotations

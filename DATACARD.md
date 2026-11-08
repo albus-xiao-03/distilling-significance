@@ -26,7 +26,7 @@ or redistributed. It has one row per presented headline of 5,000 decision episod
 
 | Column | Type | Origin | Meaning |
 |---|---|---|---|
-| `record_id` | int64 | created | Opaque number of the decision episode: its position in a seeded random draw. It reveals no MIND impression id, person or time. |
+| `record_id` | int64 | created | Number of the decision episode: its position in a seeded random draw, not MIND's impression id. It is not anonymous: with MIND and this code the draw can be redone, and a record's set of news ids identifies its impression. |
 | `news_id` | string | original | MIND news id. This is the only original field. |
 | `predicted_attention` | int8 | created | 1 if BehaviorGPT predicts the person attended to the headline, else 0. **This is the pseudo-label.** |
 | `attention_rank` | int32 | created | Step at which BehaviorGPT chose the headline as the person's next action (1 = first). Unchosen headlines follow, ordered by their last scores. |
@@ -36,6 +36,9 @@ or redistributed. It has one row per presented headline of 5,000 decision episod
 **Not in the file:** person ids, times, histories, titles, categories, or the real decisions.
 A schema check (`significance.dataset.validate_output`) enforces this. The real decisions stay
 in a local evaluation table under `.temp/work/`, which the deletion term covers.
+
+Records can still be traced back to MIND impressions (see `record_id`). The file is therefore
+MIND-derived data and is never distributed.
 
 ## Records
 
@@ -126,6 +129,15 @@ BehaviorGPT itself is unchanged: there is no fine-tuning or training of any kind
   out of the Order (V2).
 - **What else was on screen is not a model input in V1, V1o and V2** (L5).
 - **Only about the last 256 events of a history are read.** Long histories are cut.
+- **The first choice continues the latest earlier session.** The SDK cannot open a new session
+  without an event in it. BehaviorGPT's first choice in an episode is therefore read as the
+  next action after the person's most recent earlier session; for V1o and V2 that session
+  ends with an Order. The first choice is the only one for the 95 % of evaluation records
+  with *k* = 1.
+- **Re-presented headlines stay in the history.** A headline the person was shown (V2) or
+  attended (V1, V1o) in an earlier episode stays in its earlier session, even when it is
+  presented again now (plan L7). This affects 0.6 % of evaluation and 4.7 % of selection
+  observations; results without them are reported separately.
 - **Text only.** The model reads the headline text, category and entities. Screen position
   (MIND shuffles it), freshness, time of day and real timing are invisible (L8, L9).
 - **Most evaluation records have no earlier impressions.** For them the variants differ
