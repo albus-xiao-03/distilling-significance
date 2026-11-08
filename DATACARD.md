@@ -1,8 +1,10 @@
-# Data card: MIND attention pseudo-labels (R1)
+# Data card: MIND attention pseudo-labels
 
-> **Status:** generated locally on 2026-11-08: 5,000 records, variant V1o. The file is
-> git-ignored and has not been distributed. This card holds no data; the full results are in
-> [`reports/R1_results.md`](reports/R1_results.md).
+> **Status:** generated locally on 2026-11-08. It holds **25,000 impressions**: 17,053 from
+> MIND-small's training file and 7,947 from its validation file, labelled with variant V1o.
+> The dataset folder is git-ignored and has not been distributed. This card holds no data.
+> The full results are in [`reports/R1_expanded_results.md`](reports/R1_expanded_results.md);
+> the first, 5,000-record version is in [`reports/R1_results.md`](reports/R1_results.md).
 
 ## What the labels mean
 
@@ -19,48 +21,71 @@ The predictions are the pseudo-labels. Plan: [`plans/R1.md`](plans/R1.md) §0–
 The labels are **not** purchase likelihood, relevance, surprise, or a difference between
 history-conditioned and unconditional scores.
 
-## The file
+## The files
 
-`outputs/mind_attention_pseudolabels.parquet` is git-ignored and is never committed, pushed
-or redistributed. It has one row per presented headline of 5,000 decision episodes.
+The dataset lives in `dataset/`, directly under the project. The folder is git-ignored and is
+never committed, pushed or redistributed.
+
+| File | Records | Rows | Labelled attended |
+|---|---|---|---|
+| `train.parquet` | 17,053 impressions of MIND-small's training file | 631,219 | 31,320 (4.96 %) |
+| `validation.parquet` | 7,947 impressions of MIND-small's validation file | 294,541 | 9,382 (3.19 %) |
+| `metadata.json` | scope, split rule, schema, record-id ranges by origin, method, API usage, sha256 checksums | | |
+
+Each parquet file has one row per presented headline and exactly these columns:
 
 | Column | Type | Origin | Meaning |
 |---|---|---|---|
-| `record_id` | int64 | created | Number of the decision episode: its position in a seeded random draw, not MIND's impression id. It is not anonymous: with MIND and this code the draw can be redone, and a record's set of news ids identifies its impression. |
+| `record_id` | int64 | created | Number of the decision episode (one impression), unique across both files: 0–7,946 validation file, 7,947–24,999 training file. It is not MIND's impression id, but it is not anonymous: with MIND and this code the draw can be redone, and a record's set of news ids identifies its impression. |
 | `news_id` | string | original | MIND news id. This is the only original field. |
 | `predicted_attention` | int8 | created | 1 if BehaviorGPT predicts the person attended to the headline, else 0. **This is the pseudo-label.** |
 | `attention_rank` | int32 | created | Step at which BehaviorGPT chose the headline as the person's next action (1 = first). Unchosen headlines follow, ordered by their last scores. |
 | `confidence` | float64 | created | 1 − (`attention_rank` − 1) / *n*. It is based on rank because the API returns ranking scores, not probabilities. |
-| `variant` | string | created | The representation that produced the labels (provenance). |
+| `variant` | string | created | The representation that produced the labels (`V1o`). |
 
-**Not in the file:** person ids, times, histories, titles, categories, or the real decisions.
-A schema check (`significance.dataset.validate_output`) enforces this. The real decisions stay
-in a local evaluation table under `.temp/work/`, which the deletion term covers.
+**Not in the files:** person ids, times, histories, titles, categories, or the real decisions.
+A schema check (`significance.dataset.validate_output`) enforces this for each file. The real
+decisions stay in local evaluation tables under `.temp/work/`, which the deletion term covers.
 
-Records can still be traced back to MIND impressions (see `record_id`). The file is therefore
-MIND-derived data and is never distributed.
+Records can still be traced back to MIND impressions (see `record_id`). The folder is
+therefore MIND-derived data and is never distributed.
 
 ## Records
 
-- **5,000 evaluation records.** Each is one impression of the MIND-small validation file
-  (2019-11-15), drawn uniformly with a fixed seed. 4,833 distinct persons; 37 headlines per
-  impression on average.
-- **1,000 selection records** from the training file's last day (2019-11-14) choose the
-  representation. They never appear in the file.
+- **25,000 impressions in MIND-small's proportion.** The training file holds 156,965
+  impressions and the validation file 73,152, so 25,000 splits as **17,053 : 7,947**
+  (largest-remainder rounding).
+- **Validation-file records** (2019-11-15) are a uniform sample of the file:
+  - the 5,000 evaluation records of the first dataset (ids unchanged);
+  - 2,947 more, drawn uniformly from the rest.
+- **Training-file records** (2019-11-09 to 11-14) have a quota per day in proportion to that
+  day's impressions:
+
+  | Day | 11-09 | 11-10 | 11-11 | 11-12 | 11-13 | 11-14 |
+  |---|---|---|---|---|---|---|
+  | Records | 1,474 | 1,635 | 3,563 | 3,656 | 3,436 | 3,289 |
+
+  The 11-14 records include the 1,000 selection records and 20 probe records of the first
+  run. Their labels are reused.
+- **Selection records.** The 1,000 selection records (record ids 7,947–8,946) are in the
+  files, but their real decisions chose the representation. They are therefore left out of
+  every evaluation below.
 - **Previous decisions** for each record:
   - MIND's History clicks (weeks 1–4, oldest first);
   - the person's training-file impressions on days strictly before the record's day.
 
-  No impression of the record's own day, and no validation-file impression, enters any
-  history. So no record's real decisions reach BehaviorGPT.
-- **Composition (Phase 1).** In the evaluation records:
-  - 11.9 % of persons have earlier impressions with presented sets;
-  - 85.5 % have History clicks only;
-  - 2.7 % have no previous decisions at all.
+  A record never sees its own day or anything later, and its own clicks never enter its
+  prediction.
+- **Composition.**
 
-  In the selection records, 82.1 % have earlier impressions.
+  | Records | With earlier impressions | History clicks only | No previous decisions | Mean *k* |
+  |---|---|---|---|---|
+  | Validation file | 12.4 % | 84.9 % | 2.7 % | 1.18 |
+  | Training file | 55.5 % | 43.7 % | 0.8 % | 1.84 |
 
 ## How the labels were made
+
+This is unchanged from the first dataset.
 
 1. **Catalog.** Every MIND-small headline (65,238) was uploaded as a text-only item of a
    private Unbox AI catalog:
@@ -71,16 +96,10 @@ MIND-derived data and is never distributed.
 
    A `similar_items` spot check found 88 % of neighbours in the same MIND category, against
    14.5 % by chance.
-2. **Representation.** Previous decisions are written as BehaviorGPT events, with one session
-   per earlier episode, oldest first:
-   - **V1:** a View of each attended headline.
-   - **V1o:** Views, then an Order of the attended headlines.
-   - **V2:** a View of every presented headline, then an Order of the attended ones. A
-     headline that was not attended is left out of the Order.
-   - **V3:** adds the current screen. It failed its go/no-go probe and is not used.
-
-   The variant with the best mean per-record AUC on the 1,000 selection records is used:
-   **V1o** (AUC 0.600, against 0.599 for V1 and 0.569 for V2).
+2. **Representation.** Previous decisions are written as BehaviorGPT events, one session per
+   earlier episode, oldest first. The variant with the best mean per-record AUC on the 1,000
+   selection records is used: **V1o**, views of the attended headlines then an order of them
+   (AUC 0.600, against 0.599 for V1 and 0.569 for V2). V3 failed its go/no-go probe.
 3. **History cap.** BehaviorGPT reads only about the last 256 events of a history (measured
    in Phase 0). Histories are therefore capped at *K* = 256 events, current session included.
    The most recent sessions are kept whole.
@@ -90,7 +109,7 @@ MIND-derived data and is never distributed.
 5. **How many: *k*.**
    - *k* = max(1, round(*a* × *n*)), with *a* the person's attention rate in their earlier
      impressions and *n* the headlines shown.
-   - *k* = 1 without earlier impressions; this applies to 95 % of the evaluation records.
+   - *k* = 1 without earlier impressions.
    - The API has no "attend to nothing" action, so *k* cannot come from BehaviorGPT.
 6. **Calls.**
    - `complete(history, limit=len(ids), filters={"id": ids}, catalog_id=…, predict="view")`;
@@ -98,74 +117,78 @@ MIND-derived data and is never distributed.
    - no user id, so nothing is recorded for any person;
    - every response is cached.
 
+   The 25,000 records took **46,537 label calls** in total, 40,519 of them in the expansion,
+   and 0 failures. All 25,000 records decode again from the cache alone to identical labels,
+   with no call.
+
 BehaviorGPT itself is unchanged: there is no fine-tuning or training of any kind.
 
 ## Evaluation results
 
-These are on the 5,000 evaluation records, against the real decisions, with 95 % bootstrap
-intervals over persons. The full tables are in [`reports/R1_results.md`](reports/R1_results.md).
+The 24,000 records without the selection records, against the real decisions, with 95 %
+bootstrap intervals over persons.
 
 | Predictor | Per-record AUC | F1 | κ |
 |---|---|---|---|
-| **BehaviorGPT V1o (these labels)** | **0.600** [0.591, 0.609] | 0.130 | 0.098 |
-| BehaviorGPT V1o, empty history | 0.523 [0.514, 0.531] | 0.081 | 0.047 |
-| Popularity (earlier click rate) | 0.658 [0.650, 0.666] | 0.155 | 0.124 |
-| Content similarity | 0.557 [0.548, 0.565] | 0.126 | 0.093 |
-| Recency | 0.510 [0.502, 0.517] | 0.066 | 0.032 |
-| Random | 0.500 [0.491, 0.508] | 0.080 | 0.046 |
+| **BehaviorGPT V1o (these labels)** | **0.582** [0.578, 0.585] | 0.118 | 0.079 |
+| Popularity (earlier click rate) | 0.662 [0.659, 0.666] | 0.164 | 0.128 |
+| Content similarity | 0.573 [0.569, 0.576] | 0.136 | 0.098 |
+| Recency | 0.509 [0.505, 0.513] | 0.088 | 0.048 |
+| Random | 0.502 [0.498, 0.506] | 0.084 | 0.044 |
+
+**By file.**
+
+| Records | BehaviorGPT V1o | Popularity | Content |
+|---|---|---|---|
+| Validation file (7,947) | 0.599 [0.592, 0.606] | 0.655 | 0.554 |
+| Training file (16,053) | 0.573 [0.568, 0.578] | 0.666 | 0.584 |
 
 - **Decisions.**
-  - precision 0.149, recall 0.115, accuracy 0.937;
-  - the *k* rule matches the true number of clicks in 69.7 % of records;
-  - told the true count, precision would be 0.158, so the ranking, not the count, limits the
-    labels.
-- **Contributions (E3).**
-  - previous decisions +0.078 AUC (with against without history);
-  - writing the ignored headlines (V2) −0.029 against V1 (selection records);
-  - the order event +0.001.
-- **By stratum.** AUC 0.597 with earlier impressions, 0.603 with History clicks only, 0.527
-  without previous decisions.
-- **Distillation (E4).** A student trained on these labels reaches per-record AUC 0.580 on
-  held-out persons' real decisions, against 0.694 when trained on the real decisions.
-  - Recovery 0.41 [0.32, 0.49], below the 50 % target.
-  - A student trained on popularity labels recovers 0.81.
-- **Reproducibility.** Re-decoding every record from the response cache, with no API calls,
-  gives identical labels.
+  - precision 0.114, recall 0.122, accuracy 0.926;
+  - the *k* rule matches the true number of clicks in 65.4 % of records;
+  - told the true count, precision would be 0.142.
+- **Previous decisions (E3a, validation file).** +0.079 AUC with against without history,
+  replicating the first dataset's +0.078.
+- **Day effect.** On the training file, BehaviorGPT's AUC varies by day from 0.53 (11-09,
+  11-10) to 0.61 (11-14). Content similarity stays between 0.57 and 0.60.
+- **Distillation (E4).** A student trained on these labels reaches per-record AUC 0.561 on
+  held-out persons' real decisions, against 0.691 when trained on the real decisions.
+  - Recovery 0.32 [0.28, 0.36], below the 50 % target.
+  - A student trained on popularity labels recovers 0.84.
 
-**In short:** the labels carry a real, history-driven attention signal: clearly above chance
-and content similarity, but below the popularity baseline. They distil less than half of what
-real labels teach.
+**In short:** the labels carry a real, history-driven attention signal: clearly above chance,
+and stable on the validation file (0.599, as in the first dataset). They are weaker and
+day-dependent on the training file, below popularity everywhere, and they distil about a
+third of what real labels teach.
 
 ## Limitations
 
 - **A choice among the presented headlines, not a yes/no.** BehaviorGPT ranks; a single
   headline is never judged on its own (plan L1). Scores are not probabilities (L2).
-- **The count *k* comes from the person's past, not from the model** (L3).
-  - On the selection records, the rule's *k* equals the true number of clicks in 57 % of
-    episodes.
-  - The oracle-*k* diagnostic separates count errors from ranking errors.
+- **The count *k* comes from the person's past, not from the model** (L3). The oracle-*k*
+  diagnostic separates count errors from ranking errors.
 - **"Not attended" has no event** (L4). It is expressed by leaving a headline out (V1, V1o) or
   out of the Order (V2).
 - **What else was on screen is not a model input in V1, V1o and V2** (L5).
 - **Only about the last 256 events of a history are read.** Long histories are cut.
 - **The first choice continues the latest earlier session.** The SDK cannot open a new session
   without an event in it. BehaviorGPT's first choice in an episode is therefore read as the
-  next action after the person's most recent earlier session; for V1o and V2 that session
-  ends with an Order. The first choice is the only one for the 95 % of evaluation records
-  with *k* = 1.
-- **Re-presented headlines stay in the history.** A headline the person was shown (V2) or
-  attended (V1, V1o) in an earlier episode stays in its earlier session, even when it is
-  presented again now (plan L7). This affects 0.6 % of evaluation and 4.7 % of selection
-  observations; results without them are reported separately.
+  next action after the person's most recent earlier session; for V1o that session ends with
+  an Order.
+- **Re-presented headlines stay in the history.** A headline the person attended in an
+  earlier episode stays in its earlier session, even when it is presented again now (plan
+  L7). Results without such headlines are unchanged.
 - **Text only.** The model reads the headline text, category and entities. Screen position
   (MIND shuffles it), freshness, time of day and real timing are invisible (L8, L9).
-- **Most evaluation records have no earlier impressions.** For them the variants differ
-  little, and the observation sequence (V2) cannot contribute.
+- **Unexplained day effect.** Accuracy varies strongly by day on the training file; the cause
+  is not yet known.
+- **Uneven earlier impressions.** Training-file records have earlier impressions far more
+  often than validation-file ones, and records of the earliest days have fewer.
 - **Pretraining domain.** BehaviorGPT is pretrained on retail, engagement and payments. News
   headlines are engagement-like but not products (L12).
 - **Repeated calls differ slightly.** Repeated calls with the same input vary by up to about
-  0.0003 in score (Phase 0), so near-ties can flip between runs. The response cache makes
-  each run reproducible.
+  0.0003 in score (Phase 0), so near-ties can flip between runs. The response cache makes the
+  dataset reproducible.
 
 ## Known biases
 
@@ -185,10 +208,10 @@ real labels teach.
   published only without a material portion of the dataset.
 - **The labels.** The labels are BehaviorGPT outputs, subject to Unbox AI's terms. The MIT
   licence of this repository covers code only.
-- **Never distributed.** The label file is never committed, pushed or redistributed.
+- **Never distributed.** The dataset folder is never committed, pushed or redistributed.
 - **Deletion.** See [`README.md`](README.md):
   - `python -I scripts/delete_data.py --confirm` deletes `.temp/data/`, `.temp/work/`,
-    `.temp/cache/`, `outputs/` and the project's own Unbox AI catalog;
+    `.temp/cache/`, `dataset/`, `outputs/` and the project's own Unbox AI catalog;
   - on a rights holder's request, if the terms disallow this use, and at the end of the
     project.
 
@@ -207,11 +230,18 @@ python -I scripts/03_embed.py check
 python -I scripts/04_predict.py estimate         # exact number of API requests
 python -I scripts/04_predict.py run --set selection --approved
 python -I scripts/04_predict.py select
-python -I scripts/04_predict.py run --set evaluation --variants chosen --approved
-python -I scripts/04_predict.py run --set evaluation --variants chosen --empty-history --approved
-python -I scripts/05_evaluate.py --set evaluation
-python -I scripts/06_dataset.py                  # writes outputs/mind_attention_pseudolabels.parquet
-python -I scripts/07_distil.py
+python -I scripts/04_predict.py run --set evaluation --approved
+python -I scripts/04_predict.py run --set evaluation --empty-history --approved
+python -I scripts/08_expand.py records           # the extra records (25,000 in total)
+python -I scripts/04_predict.py run --set evaluation_extra --approved
+python -I scripts/04_predict.py run --set evaluation_extra --empty-history --approved
+python -I scripts/04_predict.py run --set training_extra --approved
+python -I scripts/08_expand.py views             # assemble the dataset views (no API call)
+python -I scripts/06_dataset.py                  # writes dataset/
+python -I scripts/05_evaluate.py --set dataset_eval
+python -I scripts/05_evaluate.py --set dataset_validation   # with E3a
+python -I scripts/05_evaluate.py --set dataset_training
+python -I scripts/07_distil.py --set dataset_eval
 ```
 
 Responses are cached under `.temp/cache/`, so a rerun reproduces the same labels without new
