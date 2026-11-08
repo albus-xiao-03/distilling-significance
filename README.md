@@ -157,9 +157,10 @@ Manual equivalent, if the script cannot run:
    one that is `owned` and named `mind_small_headlines`:
    ```python
    from behaviorgpt import UnboxAIClient
+
    client = UnboxAIClient(market="us")
-   [c for c in client.list_catalogs() if c.owned]   # find its catalog_id
-   client.delete_catalog("cat_...")                  # cannot be undone
+   [c for c in client.list_catalogs() if c.owned]  # find its catalog_id
+   client.delete_catalog("cat_...")  # cannot be undone
    ```
 
 **Commitment:** label files are never redistributed.
