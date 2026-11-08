@@ -1,0 +1,20 @@
+# distilling-significance: Python dependencies, pinned (Python 3.13).
+# Install into the project's virtual environment only:
+#   .venv/bin/python -m pip install --only-binary=:all: -r requirements.txt
+
+# BehaviorGPT client (Unbox AI): ranking calls and catalog uploads
+behaviorgpt==0.10.0
+
+# Data handling
+numpy==2.5.4
+pandas==3.1.1
+pyarrow==26.0.1            # parquet: catalogs, intermediate tables, output datasets
+huggingface_hub==2.4.0     # Amazon Reviews 2023 downloads
+
+# Evaluation and the distilled student
+scikit-learn==1.9.1
+scipy==1.18.1              # rank correlation, bootstrap confidence intervals
+
+# Development: tests and lint
+pytest==9.2.0
+ruff==0.17.4
