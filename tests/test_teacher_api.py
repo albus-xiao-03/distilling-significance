@@ -10,9 +10,29 @@ from significance.teacher import api
 HIST = [[("view", "a"), ("view", "b"), ("order", ("a", "b"))], [("view", "c")]]
 
 
+OPEN_CACHES = []
+
+
+@pytest.fixture(autouse=True)
+def _close_caches():
+    yield
+    while OPEN_CACHES:
+        OPEN_CACHES.pop().close()
+
+
 def _teacher(client, tmp_path=None, **kw):
     cache = api.ResponseCache(tmp_path / "cache.sqlite") if tmp_path else None
+    if cache is not None:
+        OPEN_CACHES.append(cache)
     return api.Teacher(client, "cat_test", cache=cache, sleep=lambda s: None, **kw)
+
+
+def test_response_cache_is_a_context_manager(tmp_path):
+    with api.ResponseCache(tmp_path / "c.sqlite") as cache:
+        cache.put("k", {"a": 1.0})
+        assert cache.get("k") == {"a": 1.0} and "k" in cache and len(cache) == 1
+    with api.ResponseCache(tmp_path / "c.sqlite") as again:
+        assert again.get("k") == {"a": 1.0}
 
 
 def test_to_sdk_and_history_key():

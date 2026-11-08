@@ -106,6 +106,12 @@ class ResponseCache:
         with self._lock:
             self._db.close()
 
+    def __enter__(self) -> ResponseCache:
+        return self
+
+    def __exit__(self, *exc_info) -> None:
+        self.close()
+
 
 class Throttle:
     """At most `rate` call starts per second, shared by all threads (None: no limit)."""

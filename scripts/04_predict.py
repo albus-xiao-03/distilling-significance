@@ -75,6 +75,7 @@ def cmd_estimate(p, args) -> None:
             report[record_set] = runner.estimate(
                 eps, variants, empty_history=args.empty_history, teacher=teacher
             )
+    teacher.cache.close()
     print(json.dumps(report, indent=1))
 
 
@@ -113,6 +114,7 @@ def cmd_run(p, args) -> None:
         runner.save_predictions(rows, facts, path)
         print(json.dumps(facts, indent=1))
         print(f"-> {path.relative_to(p.root)}")
+    teacher.cache.close()
 
 
 def cmd_select(p, args) -> None:

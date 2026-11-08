@@ -28,9 +28,8 @@ def test_full_runs_need_approval():
 
 def test_estimate_is_exact_and_sees_cached_first_steps(mind_frames, tmp_path):
     eps, _, _ = _setup(mind_frames)
-    teacher = api.Teacher(
-        FakeClient(), "cat", cache=api.ResponseCache(tmp_path / "c.sqlite"), sleep=lambda s: None
-    )
+    cache = api.ResponseCache(tmp_path / "c.sqlite")
+    teacher = api.Teacher(FakeClient(), "cat", cache=cache, sleep=lambda s: None)
     est = runner.estimate(eps, ["V1", "V2"], teacher=teacher)
     expected = sum(requests_needed(ep.n, E.episode_k(ep), "V1") for ep in eps)
     assert est["V1"]["requests"] == expected == est["V2"]["requests"]
@@ -40,6 +39,7 @@ def test_estimate_is_exact_and_sees_cached_first_steps(mind_frames, tmp_path):
     assert facts["requests"] == expected == facts["teacher"]["api_calls"]
     again = runner.estimate(eps, ["V1"], teacher=teacher)
     assert again["V1"]["first_step_requests_cached"] == len(eps)
+    cache.close()
 
 
 def test_run_variant_rows_and_resume_from_cache(mind_frames, tmp_path):
@@ -64,6 +64,7 @@ def test_run_variant_rows_and_resume_from_cache(mind_frames, tmp_path):
         rows.sort_values(["record_id", "news_id"]).reset_index(drop=True),
         rows2.sort_values(["record_id", "news_id"]).reset_index(drop=True),
     )
+    cache.close()
     path = runner.predictions_path(tmp_path, "selection", "V2", False)
     runner.save_predictions(rows, facts, path)
     assert pd.read_parquet(path).shape == rows.shape and path.with_suffix(".json").is_file()
