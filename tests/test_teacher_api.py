@@ -123,3 +123,12 @@ def test_throttle_spaces_call_starts():
     api.Throttle(None).wait()  # no limit, no sleep
     with pytest.raises(ValueError):
         api.Throttle(0)
+
+
+def test_cache_key_changes_with_the_catalog_upload():
+    a = api.Teacher(FakeClient(), "cat", catalog_version="job-1")
+    b = api.Teacher(FakeClient(), "cat", catalog_version="job-2")
+    same = api.Teacher(FakeClient(), "cat", catalog_version="job-1")
+    assert a.cache_key(HIST, ["x"], "view") != b.cache_key(HIST, ["x"], "view")
+    assert a.cache_key(HIST, ["x"], "view") == same.cache_key(HIST, ["x"], "view")
+    assert a.cache_key(HIST, ["x"], "view") != a.cache_key(HIST, ["x"], "view").upper()

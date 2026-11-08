@@ -9,8 +9,10 @@ One call (plans/R1.md 6.1):
   score spread of about 0.04).
 - No user_id is ever sent, so the SDK sends register_event=False and nothing is recorded
   for any person on the account.
-- Every response is cached in SQLite under .temp/cache/ by (catalog, prediction question,
-  history, chunk ids), so reruns and resumed runs make no new calls for what they have.
+- Every response is cached in SQLite under .temp/cache/ by (catalog, catalog upload,
+  prediction question, history, chunk ids), so reruns and resumed runs make no new calls
+  for what they have. The upload (embed job id) is part of the key because re-uploading a
+  file of the same name keeps the catalog id but changes its items.
 - 429 and 5xx answers and transport errors are retried with capped exponential backoff.
 - A throttle caps call starts per second across worker threads.
 - An id the API does not return (the filter silently drops unknown ids, Phase 0) is
@@ -36,7 +38,7 @@ from behaviorgpt._exceptions import UnboxAIError
 from significance import config
 
 RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
-CACHE_VERSION = 1
+CACHE_VERSION = 2
 
 
 def to_sdk(sessions: Sequence[Sequence[tuple]]) -> list[list]:
@@ -180,11 +182,13 @@ class Teacher:
         backoff_cap: float = 30.0,
         sleep: Callable[[float], None] = time.sleep,
         offline: bool = False,
+        catalog_version: str | None = None,
     ):
         if not 1 <= max_ids <= config.MAX_IDS_PER_CALL:
             raise ValueError(f"max_ids must be between 1 and {config.MAX_IDS_PER_CALL}")
         self.client = client
         self.catalog_id = catalog_id
+        self.catalog_version = catalog_version  # e.g. the embed job id of the upload
         self.cache = cache
         self.throttle = throttle or Throttle(None)
         self.retries = retries
@@ -203,6 +207,7 @@ class Teacher:
             {
                 "v": CACHE_VERSION,
                 "catalog": self.catalog_id,
+                "catalog_version": self.catalog_version,
                 "predict": predict,
                 "history": history_key(sessions),
                 "ids": sorted(chunk),

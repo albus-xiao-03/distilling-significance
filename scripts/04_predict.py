@@ -37,6 +37,7 @@ def make_teacher(p, *, rate: float | None, offline: bool = False) -> Teacher:
         cache=ResponseCache(p.cache / "behaviorgpt.sqlite"),
         throttle=Throttle(rate),
         offline=offline,
+        catalog_version=state["last_embed"]["job_id"],
     )
 
 
