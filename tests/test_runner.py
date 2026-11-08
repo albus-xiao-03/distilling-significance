@@ -19,7 +19,7 @@ def _setup(mind_frames):
 
 
 def test_full_runs_need_approval():
-    for name in ("selection", "evaluation"):
+    for name in ("selection", "evaluation", "evaluation_extra", "training_extra"):
         with pytest.raises(runner.ApprovalRequired, match="approval"):
             runner.require_approval(name, False)
         runner.require_approval(name, True)
@@ -142,3 +142,10 @@ def test_choose_variant_also_reports_auc_without_seen_before(mind_frames):
     assert best == "V2"
     assert table["V1"]["without_seen_before"]["value"] == 1.0
     assert runner.best_variant(table, key=lambda e: e["without_seen_before"]["value"]) == "V1"
+
+
+def test_extra_dataset_sets_run_the_chosen_variant_only():
+    for name in ("evaluation_extra", "training_extra"):
+        assert runner.variants_for_run(name, None, "V1o") == ["V1o"]
+        with pytest.raises(ValueError, match="chosen variant only"):
+            runner.variants_for_run(name, ["V1", "V2"], "V1o")

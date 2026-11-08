@@ -21,6 +21,7 @@ import sys
 from behaviorgpt import UnboxAIClient
 
 from significance import config, runner
+from significance.data import records
 from significance.teacher.api import ResponseCache, Teacher, Throttle
 
 
@@ -60,12 +61,18 @@ def cmd_estimate(p, args) -> None:
         eps, _, _ = runner.load_set(p.work, record_set)
         if args.variants:
             variants = resolve_variants(p, record_set, args.variants)
+        elif record_set in runner.DATASET_SETS:
+            variants = ["<chosen>"]
         else:
-            variants = list(config.DEFAULT_VARIANTS) if record_set != "evaluation" else ["<chosen>"]
+            variants = list(config.DEFAULT_VARIANTS)
         if variants == ["<chosen>"]:
-            # one variant runs on the evaluation records; V1/V1o/V2 need the same requests
-            report[record_set] = runner.estimate(eps, ["V1"], teacher=teacher)
-            report[record_set]["note"] = "requests are the same for V1, V1o and V2"
+            # one variant runs on the dataset's records; V1/V1o/V2 need the same requests
+            chosen = chosen_variant(p)
+            report[record_set] = runner.estimate(
+                eps, [chosen or "V1"], empty_history=args.empty_history, teacher=teacher
+            )
+            if chosen is None:
+                report[record_set]["note"] = "requests are the same for V1, V1o and V2"
         else:
             report[record_set] = runner.estimate(
                 eps, variants, empty_history=args.empty_history, teacher=teacher
@@ -157,12 +164,12 @@ def main() -> None:
         "--set",
         nargs="+",
         default=["selection", "evaluation"],
-        choices=["selection", "evaluation", "probe"],
+        choices=list(records.RECORD_SETS),
     )
     e.add_argument("--variants", nargs="+")
     e.add_argument("--empty-history", action="store_true")
     r = sub.add_parser("run", help="decode a record set")
-    r.add_argument("--set", required=True, choices=["selection", "evaluation", "probe"])
+    r.add_argument("--set", required=True, choices=list(records.RECORD_SETS))
     r.add_argument(
         "--variants",
         nargs="+",

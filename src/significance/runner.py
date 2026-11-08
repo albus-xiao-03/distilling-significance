@@ -30,7 +30,9 @@ from significance import evaluate as M
 from significance.data import records as R
 from significance.teacher.decode import decode, requests_needed
 
-NEEDS_APPROVAL = frozenset({"selection", "evaluation"})
+#: The records whose pseudo-labels form the dataset; only the chosen variant runs on them.
+DATASET_SETS = frozenset({"evaluation", "evaluation_extra", "training_extra"})
+NEEDS_APPROVAL = frozenset({"selection"}) | DATASET_SETS
 
 
 class ApprovalRequired(RuntimeError):
@@ -48,17 +50,18 @@ def require_approval(record_set: str, approved: bool) -> None:
 def variants_for_run(
     record_set: str, requested: Sequence[str] | None, chosen: str | None
 ) -> list[str]:
-    """The variants a run decodes. The evaluation records run the chosen variant only
-    (D16, and the request budget): it is the default there, and anything else is refused.
-    Other sets run the requested variants, by default V1, V1o and V2."""
+    """The variants a run decodes. The dataset's records (evaluation, evaluation_extra,
+    training_extra) run the chosen variant only (D16, and the request budget): it is the
+    default there, and anything else is refused. Other sets run the requested variants, by
+    default V1, V1o and V2."""
     names = list(requested) if requested else None
-    if record_set == "evaluation":
+    if record_set in DATASET_SETS:
         if chosen is None:
             raise ValueError("no variant chosen yet: run the selection records, then `select`")
         resolved = [chosen if n == "chosen" else n for n in (names or ["chosen"])]
         if resolved != [chosen]:
             raise ValueError(
-                f"the evaluation records run the chosen variant only ({chosen}), "
+                f"the {record_set} records run the chosen variant only ({chosen}), "
                 f"not {', '.join(resolved)}"
             )
         return resolved
