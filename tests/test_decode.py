@@ -59,12 +59,25 @@ def test_current_session_grows_in_the_variant_form():
     assert [type(e).__name__ for e in client.calls[2]["history"][-1]] == ["View", "View"]
 
 
-def test_candidates_are_never_in_their_own_history_before_being_chosen():
+def test_current_session_never_holds_an_unchosen_candidate():
+    """Even when earlier sessions hold re-presented candidates (L7, by design), the current
+    session only ever holds the observations BehaviorGPT already chose."""
+    ep = E.Episode(
+        "selection",
+        8,
+        (E.EarlierEpisode(("a", "p1"), ("p1",)),),  # a was shown before and ignored
+        ("a", "b", "c", "d", "e"),
+        2,
+        1,
+    )
     teacher, client = _teacher()
-    decode.decode(teacher, EP, "V2")
-    for call in client.calls:
-        in_history = {x for _, x in history_items(call["history"])}
-        assert not in_history & set(call["ids"])
+    out = decode.decode(teacher, ep, "V2")
+    for step, call in enumerate(client.calls):
+        current = {x for _, x in history_items([call["history"][-1]])} if step else set()
+        assert current == set(out.ranking[:step])
+        assert not current & set(call["ids"])
+    first_history = {x for _, x in history_items(client.calls[0]["history"])}
+    assert "a" in first_history  # the earlier encounter is kept
 
 
 def test_empty_history_sends_only_the_current_session():

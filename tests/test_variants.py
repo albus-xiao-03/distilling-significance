@@ -70,15 +70,29 @@ def test_screen_session_is_a_seeded_permutation():
     assert sorted(x for _, x in s1) == sorted(EP.presented)
 
 
-def test_candidates_never_enter_the_written_history():
+def _items(sessions):
+    return {x for s in sessions for e in s for x in ((e[1],) if e[0] == "view" else e[1])}
+
+
+def test_written_history_holds_no_candidate_without_an_earlier_encounter():
     for variant in ("V1", "V1o", "V2"):
-        items = {
-            x
-            for s in E.previous_sessions(EP, variant, 100)
-            for e in s
-            for x in ((e[1],) if e[0] == "view" else e[1])
-        }
-        assert not items & set(EP.presented)
+        assert not _items(E.previous_sessions(EP, variant, 100)) & set(EP.presented)
+
+
+def test_re_presented_candidates_stay_in_earlier_sessions_by_design():
+    """L7: earlier sessions are written as they happened. c1 was clicked before (History),
+    c2 was shown before and ignored; both are presented again now."""
+    ep = E.Episode(
+        "selection",
+        5,
+        (E.EarlierEpisode(None, ("c1",)), E.EarlierEpisode(("c2", "p1", "p2"), ("p1",))),
+        ("c1", "c2", "c3"),
+        3,
+        1,
+    )
+    assert _items(E.previous_sessions(ep, "V1", 100)) & set(ep.presented) == {"c1"}
+    assert _items(E.previous_sessions(ep, "V1o", 100)) & set(ep.presented) == {"c1"}
+    assert _items(E.previous_sessions(ep, "V2", 100)) & set(ep.presented) == {"c1", "c2"}
 
 
 def test_cap_keeps_recent_sessions_whole_and_cuts_the_next():

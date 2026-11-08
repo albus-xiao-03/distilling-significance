@@ -188,7 +188,11 @@ def load_episodes(path: Path) -> list[Episode]:
 #
 # During next-action decoding the observations BehaviorGPT has chosen so far form the
 # current session in the same form: V1 views them; V1o and V2 view them and then order them.
-# Candidates of the current record never enter its history (except V3's screen).
+# The current session never holds a candidate before BehaviorGPT chooses it (V3's screen
+# aside). Earlier sessions are written as they happened, so a candidate the person attended
+# earlier (V1, V1o) or was shown earlier (V2, V3) stays in them: plans/R1.md L7 expects such
+# re-presented observations in V2's history and reports them separately (the seen_before
+# flag of the decisions table; 0.6 % of evaluation and 4.7 % of selection observations).
 
 Event = tuple[str, "str | tuple[str, ...]"]
 Session = list[Event]
