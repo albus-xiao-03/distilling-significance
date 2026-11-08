@@ -1,0 +1,179 @@
+"""Prediction runs: estimate, run and choose the variant (plans/R1.md 6.5, 9 Phase 4).
+
+- `estimate` counts the exact ranking requests a run needs (k steps x chunks per record,
+  plans/R1.md 6.1-6.3) and how many of them the cache already holds where that is known
+  in advance (the first decoding step).
+- `run_variant` decodes every record of a set with one variant, in parallel threads; the
+  response cache makes a rerun resume where a stopped run left off.
+- `choose_variant` picks the variant with the best mean per-record AUC on the selection
+  records (D16); ties go to the simpler variant.
+
+Runs over the selection and evaluation records are the full-scale BehaviorGPT inference
+and need explicit owner approval (`approved=True`); the probe records are for small
+feasibility checks and need none.
+"""
+
+from __future__ import annotations
+
+import json
+import time
+from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from significance import config
+from significance import episodes as E
+from significance import evaluate as M
+from significance.data import records as R
+from significance.teacher.decode import decode, requests_needed
+
+NEEDS_APPROVAL = frozenset({"selection", "evaluation"})
+
+
+class ApprovalRequired(RuntimeError):
+    pass
+
+
+def require_approval(record_set: str, approved: bool) -> None:
+    if record_set in NEEDS_APPROVAL and not approved:
+        raise ApprovalRequired(
+            f"running BehaviorGPT on the {record_set} records is the full-scale inference: "
+            "it needs the owner's explicit approval (pass --approved once given)"
+        )
+
+
+def load_set(work: Path, record_set: str) -> tuple[list[E.Episode], pd.DataFrame, pd.DataFrame]:
+    """(episodes, real decisions, records) of a record set."""
+    eps = E.load_episodes(E.episodes_dir(work) / f"{record_set}.jsonl")
+    decisions = pd.read_parquet(E.episodes_dir(work) / f"decisions_{record_set}.parquet")
+    return eps, decisions, R.load_records(work, record_set)
+
+
+def predictions_path(work: Path, record_set: str, variant: str, empty_history: bool) -> Path:
+    suffix = "_empty" if empty_history else ""
+    return work / "predictions" / record_set / f"{variant}{suffix}.parquet"
+
+
+# --- estimate ------------------------------------------------------------------------
+
+
+def estimate(
+    episodes: Sequence[E.Episode],
+    variants: Sequence[str],
+    *,
+    empty_history: bool = False,
+    teacher=None,
+) -> dict:
+    """Ranking requests per variant (exact), and first-step requests already cached."""
+    out = {}
+    for variant in variants:
+        requests = sum(requests_needed(ep.n, E.episode_k(ep), variant) for ep in episodes)
+        entry = {"records": len(episodes), "requests": int(requests)}
+        if teacher is not None and teacher.cache is not None:
+            cached = 0
+            for ep in episodes:
+                k = min(E.episode_k(ep), ep.n)
+                hist = E.history_for(ep, variant, k, empty_history=empty_history)
+                if variant == "V3":
+                    hist = [*hist, E.screen_session(ep)]
+                predict = "purchase" if variant == "V3" else "view"
+                for chunk in teacher.chunks(ep.presented):
+                    cached += teacher.cache_key(hist, chunk, predict) in teacher.cache
+            entry["first_step_requests_cached"] = cached
+        out[variant] = entry
+    out["total_requests"] = int(sum(v["requests"] for v in out.values()))
+    return out
+
+
+# --- run -----------------------------------------------------------------------------
+
+
+def run_variant(
+    teacher,
+    episodes: Sequence[E.Episode],
+    variant: str,
+    *,
+    empty_history: bool = False,
+    workers: int = 8,
+    progress: Callable[[int, int], None] | None = None,
+) -> tuple[pd.DataFrame, dict]:
+    """Decode all episodes with one variant. Returns per-observation rows and run facts."""
+    started = time.time()
+    before = teacher.stats.as_dict()
+    done = 0
+
+    def one(ep: E.Episode):
+        return decode(teacher, ep, variant, empty_history=empty_history)
+
+    results = []
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for res in pool.map(one, episodes):
+            results.append(res)
+            done += 1
+            if progress is not None:
+                progress(done, len(episodes))
+    rows = pd.DataFrame([row for res in results for row in res.rows()])
+    after = teacher.stats.as_dict()
+    facts = {
+        "variant": variant,
+        "empty_history": empty_history,
+        "records": len(results),
+        "observations": len(rows),
+        "requests": int(sum(r.requests for r in results)),
+        "teacher": {k: after[k] - before[k] for k in after},
+        "records_with_missing_ids": int(sum(bool(r.missing) for r in results)),
+        "history_events_mean": round(float(np.mean([r.history_events for r in results])), 2)
+        if results
+        else 0.0,
+        "seconds": round(time.time() - started, 1),
+    }
+    return rows, facts
+
+
+def save_predictions(rows: pd.DataFrame, facts: dict, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp.parquet")
+    rows.to_parquet(tmp, index=False)
+    tmp.replace(path)
+    path.with_suffix(".json").write_text(json.dumps(facts, indent=1))
+
+
+# --- choose the variant (D16) --------------------------------------------------------
+
+
+def with_decisions(pred: pd.DataFrame, decisions: pd.DataFrame) -> pd.DataFrame:
+    """Predictions joined to the real decisions (one row per presented observation)."""
+    keys = ["record_set", "record_id", "news_id"]
+    merged = pred.merge(decisions, on=keys, how="inner", validate="one_to_one")
+    if len(merged) != len(pred):
+        raise ValueError("predictions and decisions do not cover the same observations")
+    return merged.reset_index(drop=True)
+
+
+def choose_variant(
+    predictions: dict[str, pd.DataFrame],
+    decisions: pd.DataFrame,
+    records: pd.DataFrame,
+    *,
+    n_boot: int = 1000,
+    seed: int = config.SEED,
+) -> tuple[str, dict]:
+    """The variant with the best mean per-record AUC against the real decisions."""
+    persons = records.set_index("record_id")["user_id"]
+    table = {}
+    for variant, pred in predictions.items():
+        merged = with_decisions(pred, decisions)
+        per_record = M.ranking_table(merged, "confidence")
+        est = M.mean_with_ci(
+            per_record["auc"].tolist(),
+            persons.loc[per_record["record_id"]].tolist(),
+            n_boot=n_boot,
+            seed=seed,
+        )
+        table[variant] = est.as_dict()
+    order = {v: i for i, v in enumerate(config.VARIANTS)}
+    best = max(table, key=lambda v: (table[v]["value"], -order[v]))
+    return best, table
