@@ -58,6 +58,7 @@ def test_paths_layout_keeps_data_in_temp(tmp_path):
     for folder in (p.data, p.raw, p.catalog, p.work, p.cache):
         assert folder.is_relative_to(tmp_path / ".temp")
     assert p.outputs == tmp_path / "outputs"
+    assert p.dataset == tmp_path / "dataset" and p.dataset.parent == tmp_path
     assert p.env_file == tmp_path / ".env"
 
 
@@ -72,3 +73,13 @@ def test_fixed_settings_are_consistent():
     assert "V3" not in config.DEFAULT_VARIANTS
     assert config.OUTPUT_COLUMNS[:2] == ("record_id", "news_id")
     assert set(config.MIND_FILES) == {"train", "dev"}
+
+
+def test_dataset_folder_is_git_ignored():
+    import subprocess
+
+    root = config.project_root()
+    probe = root / config.DATASET_FOLDER / "any.parquet"
+    out = subprocess.run(["git", "check-ignore", "-q", str(probe)], cwd=root)
+    assert out.returncode == 0
+    assert config.N_DATASET_IMPRESSIONS == 25_000

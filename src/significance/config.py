@@ -47,6 +47,14 @@ N_SELECTION_RECORDS = 1_000
 N_PROBE_RECORDS = 20
 SEED = 20_261_108
 
+#: Expanded scope (owner, 2026-11-08): the dataset holds 25,000 impressions in total, split
+#: between MIND-small's training and validation files in proportion to their sizes
+#: (156,965 : 73,152 -> 17,053 : 7,947). It reuses the labelled evaluation, selection and
+#: probe records and adds new records to reach those counts.
+N_DATASET_IMPRESSIONS = 25_000
+#: The dataset folder directly under the project folder (git-ignored, deletion term).
+DATASET_FOLDER = "dataset"
+
 #: Representation variants (plans/R1.md 5.4). V3 failed its Phase 0 go/no-go probe
 #: (predict="purchase" did not follow the person's history within the screen), so it is
 #: not run by default (plans/R1.md L6).
@@ -114,8 +122,13 @@ class Paths:
 
     @property
     def outputs(self) -> Path:
-        """The generated pseudo-label dataset (git-ignored, deletion term)."""
+        """Where the first, 5,000-record dataset was written; superseded by `dataset`."""
         return self.root / "outputs"
+
+    @property
+    def dataset(self) -> Path:
+        """The pseudo-label dataset folder (git-ignored, never pushed; deletion term)."""
+        return self.root / DATASET_FOLDER
 
     @property
     def reports(self) -> Path:
