@@ -1,4 +1,7 @@
-"""Output dataset: exact schema (no person, time, text or real decision) and label checks."""
+"""Output dataset: exact schema (no person, time, text or real decision), label checks,
+one file per MIND file, metadata."""
+
+import json
 
 import pandas as pd
 import pyarrow as pa
@@ -21,12 +24,13 @@ FORBIDDEN = {
     "k",
     "record_set",
     "empty_history",
+    "split",
 }
 
 
-def _predictions(variant="V1", record_set="evaluation", empty=False):
+def _predictions(variant="V1", record_set="dataset", empty=False):
     rows = []
-    for rid, n, k in ((0, 4, 1), (1, 3, 2)):
+    for rid, n, k in ((0, 4, 1), (1, 3, 2), (2, 2, 1)):
         for rank in range(1, n + 1):
             rows.append(
                 {
@@ -47,23 +51,19 @@ def _predictions(variant="V1", record_set="evaluation", empty=False):
     return pd.DataFrame(rows).sample(frac=1, random_state=0)
 
 
-def test_output_has_exactly_the_six_columns_and_no_forbidden_field(tmp_path):
+def test_output_has_exactly_the_six_columns_and_no_forbidden_field():
     table = dataset.build_output(_predictions(), "V1")
     assert tuple(table.column_names) == config.OUTPUT_COLUMNS
     assert not FORBIDDEN & set(table.column_names)
-    path = dataset.write_output(table, tmp_path)
-    assert path.name == "mind_attention_pseudolabels.parquet"
-    back = pq.read_table(path)
-    assert back.schema.remove_metadata() == dataset.SCHEMA
-    df = back.to_pandas()
-    assert df["record_id"].tolist() == [0, 0, 0, 0, 1, 1, 1]
-    assert df["attention_rank"].tolist() == [1, 2, 3, 4, 1, 2, 3]
+    df = table.to_pandas()
+    assert df["record_id"].tolist() == [0, 0, 0, 0, 1, 1, 1, 2, 2]
+    assert df["attention_rank"].tolist() == [1, 2, 3, 4, 1, 2, 3, 1, 2]
 
 
 @pytest.mark.parametrize(
     ("kwargs", "variant", "match"),
     [
-        ({"record_set": "selection"}, "V1", "evaluation records"),
+        ({"record_set": "evaluation"}, "V1", "dataset records"),
         ({"empty": True}, "V1", "empty-history"),
         ({}, "V2", "chosen"),
         ({}, "V9", "unknown"),
@@ -91,3 +91,29 @@ def test_validate_output_catches_inconsistent_labels_and_extra_columns():
     extra = pa.Table.from_pandas(good.assign(user_id="U1"), preserve_index=False)
     with pytest.raises(ValueError, match="schema"):
         dataset.validate_output(extra)
+
+
+def test_write_dataset_one_validated_file_per_split(tmp_path):
+    table = dataset.build_output(_predictions(), "V1")
+    paths = dataset.write_dataset(table, {0: "validation", 1: "train", 2: "train"}, tmp_path)
+    assert {p.name for p in paths.values()} == {"train.parquet", "validation.parquet"}
+    train = pq.read_table(paths["train"])
+    assert train.schema.remove_metadata() == dataset.SCHEMA
+    assert sorted(set(train.column("record_id").to_pylist())) == [1, 2]
+    assert set(pq.read_table(paths["validation"]).column("record_id").to_pylist()) == {0}
+    with pytest.raises(ValueError, match="split"):
+        dataset.write_dataset(table, {0: "validation", 1: "train"}, tmp_path)
+
+
+def test_metadata_counts_checksums_and_rights(tmp_path):
+    table = dataset.build_output(_predictions(), "V1")
+    paths = dataset.write_dataset(table, {0: "validation", 1: "train", 2: "train"}, tmp_path)
+    meta = dataset.build_metadata(
+        paths, [{"record_id": "0", "origin": "x"}], "V1", {"api_calls": 3}, "2026-11-08"
+    )
+    assert meta["records"] == 3 and meta["rows"] == 9
+    assert meta["splits"]["train"]["records"] == 2
+    assert meta["splits"]["validation"]["sha256"] == dataset.sha256_of(paths["validation"])
+    assert list(meta["columns"]) == list(config.OUTPUT_COLUMNS)
+    assert "no distribution" in meta["rights"]
+    json.dumps(meta)  # serialisable
