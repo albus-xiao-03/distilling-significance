@@ -22,6 +22,9 @@ def test_mrr_and_ndcg_follow_mind_formulas():
     assert M.mrr(y, s) == pytest.approx((1 / 2 + 1 / 4) / 2)
     assert M.ndcg(y, s, 2) == pytest.approx((1 / np.log2(3)) / (1 + 1 / np.log2(3)))
     assert M.ndcg([1, 0], [0.9, 0.1], 10) == 1.0
+    assert np.isnan(M.mrr([0, 0], [0.2, 0.1])) and np.isnan(M.ndcg([0, 0], [0.2, 0.1], 5))
+    est = M.mean_with_ci([0.5, float("nan"), 0.7], ["u1", "u2", "u3"], n_boot=20)
+    assert est.value == pytest.approx(0.6) and est.n_records == 2
 
 
 def _frame():

@@ -47,8 +47,11 @@ def _sorted_labels(labels, scores) -> np.ndarray:
 
 
 def mrr(labels: Sequence[int], scores: Sequence[float]) -> float:
-    """MIND's MRR: sum over attended observations of 1/rank, divided by their number."""
+    """MIND's MRR: sum over attended observations of 1/rank, divided by their number
+    (NaN, and so left out of means, when nothing was attended)."""
     y = _sorted_labels(labels, scores)
+    if not y.sum():
+        return float("nan")
     return float(np.sum(y / (np.arange(len(y)) + 1)) / np.sum(y))
 
 
@@ -58,9 +61,9 @@ def _dcg(y_sorted: np.ndarray, k: int) -> float:
 
 
 def ndcg(labels: Sequence[int], scores: Sequence[float], k: int) -> float:
-    """MIND's nDCG@k."""
+    """MIND's nDCG@k (NaN when nothing was attended)."""
     best = _dcg(np.sort(np.asarray(labels, dtype=float))[::-1], k)
-    return _dcg(_sorted_labels(labels, scores), k) / best if best > 0 else 0.0
+    return _dcg(_sorted_labels(labels, scores), k) / best if best > 0 else float("nan")
 
 
 def strict_scores(frame: pd.DataFrame, score_col: str) -> pd.Series:
