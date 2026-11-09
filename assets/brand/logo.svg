@@ -1,31 +1,59 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-labelledby="logo-title logo-desc">
   <title id="logo-title">distilling-significance logo</title>
-  <desc id="logo-desc">A flask catching a glowing amber drop: significance, distilled.</desc>
+  <desc id="logo-desc">A layered network on a blue tile: many input nodes converge through a hidden layer into one glowing output node, along one traced path. Significance, distilled.</desc>
   <defs>
     <linearGradient id="logo-bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4F46E5"/>
-      <stop offset="1" stop-color="#9333EA"/>
+      <stop offset="0" stop-color="#0B1F45"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
     </linearGradient>
-    <linearGradient id="logo-amber" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FDE68A"/>
-      <stop offset="1" stop-color="#F59E0B"/>
-    </linearGradient>
-    <clipPath id="logo-flask">
-      <path d="M55 46 V30 h18 v16 l24 44 a8 8 0 0 1 -7 12 H38 a8 8 0 0 1 -7 -12 Z"/>
-    </clipPath>
+    <radialGradient id="logo-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#67E8F9" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#67E8F9" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="logo-grid" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="6" cy="6" r="0.9" fill="#93C5FD" opacity=".25"/>
+    </pattern>
   </defs>
   <rect width="128" height="128" rx="28" fill="url(#logo-bg)"/>
-  <g clip-path="url(#logo-flask)">
-    <path d="M20 76 q11 -7 22 0 t22 0 t22 0 t22 0 V110 H20 Z" fill="url(#logo-amber)"/>
-    <circle cx="52" cy="90" r="3.5" fill="#fff" opacity=".75"/>
-    <circle cx="70" cy="85" r="2.5" fill="#fff" opacity=".75"/>
-    <circle cx="79" cy="94" r="2" fill="#fff" opacity=".75"/>
+  <rect width="128" height="128" rx="28" fill="url(#logo-grid)"/>
+  <g stroke="#60A5FA" stroke-width="1.4" opacity=".45">
+    <line x1="24" y1="30" x2="40" y2="62"/>
+    <line x1="24" y1="30" x2="64" y2="62"/>
+    <line x1="24" y1="30" x2="88" y2="62"/>
+    <line x1="44" y1="30" x2="40" y2="62"/>
+    <line x1="44" y1="30" x2="64" y2="62"/>
+    <line x1="44" y1="30" x2="88" y2="62"/>
+    <line x1="64" y1="30" x2="40" y2="62"/>
+    <line x1="64" y1="30" x2="64" y2="62"/>
+    <line x1="64" y1="30" x2="88" y2="62"/>
+    <line x1="84" y1="30" x2="40" y2="62"/>
+    <line x1="84" y1="30" x2="64" y2="62"/>
+    <line x1="84" y1="30" x2="88" y2="62"/>
+    <line x1="104" y1="30" x2="40" y2="62"/>
+    <line x1="104" y1="30" x2="64" y2="62"/>
+    <line x1="104" y1="30" x2="88" y2="62"/>
   </g>
-  <path d="M55 46 V30 h18 v16 l24 44 a8 8 0 0 1 -7 12 H38 a8 8 0 0 1 -7 -12 Z" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
-  <path d="M50 30 h28" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
-  <path d="M64 44 C67.5 49.5 70 52.5 70 56 a6 6 0 0 1 -12 0 c0 -3.5 2.5 -6.5 6 -12 Z" fill="url(#logo-amber)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M55 72 q9 -5 18 0" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".9"/>
-  <path d="M64 14 v8 M57 18 l2.5 4.5 M71 18 l-2.5 4.5" stroke="#FDE68A" stroke-width="3" stroke-linecap="round"/>
-  <path d="M97 14 l2.5 6.5 6.5 2.5 -6.5 2.5 -2.5 6.5 -2.5 -6.5 -6.5 -2.5 6.5 -2.5 Z" fill="#FDE68A"/>
-  <circle cx="30" cy="22" r="2.5" fill="#FDE68A" opacity=".9"/>
+  <g stroke="#93C5FD" stroke-width="1.8" opacity=".65">
+    <line x1="40" y1="62" x2="64" y2="96"/>
+    <line x1="64" y1="62" x2="64" y2="96"/>
+    <line x1="88" y1="62" x2="64" y2="96"/>
+  </g>
+  <path d="M84 30 L64 62 L64 96" fill="none" stroke="#22D3EE" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="64" cy="96" r="21" fill="url(#logo-glow)"/>
+  <circle cx="24" cy="30" r="4.5" fill="#DBEAFE"/>
+  <circle cx="44" cy="30" r="4.5" fill="#DBEAFE"/>
+  <circle cx="64" cy="30" r="4.5" fill="#DBEAFE"/>
+  <circle cx="84" cy="30" r="4.5" fill="#22D3EE"/>
+  <circle cx="104" cy="30" r="4.5" fill="#DBEAFE"/>
+  <circle cx="40" cy="62" r="5.5" fill="#BFDBFE"/>
+  <circle cx="64" cy="62" r="5.5" fill="#22D3EE"/>
+  <circle cx="88" cy="62" r="5.5" fill="#BFDBFE"/>
+  <circle cx="64" cy="96" r="9.5" fill="#22D3EE" stroke="#E0F2FE" stroke-width="2.5"/>
+  <circle cx="61" cy="93" r="2.6" fill="#fff" opacity=".85"/>
+  <g fill="none" stroke="#93C5FD" stroke-width="2" stroke-linecap="round" opacity=".55">
+    <path d="M14 26 V14 H26"/>
+    <path d="M102 14 H114 V26"/>
+    <path d="M114 102 V114 H102"/>
+    <path d="M26 114 H14 V102"/>
+  </g>
 </svg>

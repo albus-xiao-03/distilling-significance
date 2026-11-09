@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/brand/logo.svg" width="116" alt="distilling-significance logo: a flask catching a glowing amber drop">
+  <img src="assets/brand/logo.svg" width="116" alt="distilling-significance logo: a layered network on a blue tile, distilling many inputs into one glowing output">
 </p>
 
 <h1 align="center">distilling-significance</h1>
