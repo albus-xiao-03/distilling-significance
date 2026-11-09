@@ -54,6 +54,9 @@ SEED = 20_261_108
 N_DATASET_IMPRESSIONS = 25_000
 #: The dataset folder directly under the project folder (git-ignored, deletion term).
 DATASET_FOLDER = "dataset"
+#: The owner's PRIVATE Hugging Face dataset repository holding a copy of the dataset
+#: (owner, 2026-11-09). Uploads refuse a repository that is not private.
+HF_DATASET_REPO = "albus-xiao-03/significance-distilled"
 
 #: Representation variants (plans/R1.md 5.4). V3 failed its Phase 0 go/no-go probe
 #: (predict="purchase" did not follow the person's history within the screen), so it is
