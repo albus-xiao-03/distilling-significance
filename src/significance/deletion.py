@@ -8,6 +8,9 @@ Deletes the project's MIND-derived data and its own Unbox AI catalog:
   superseded dataset was written);
 - remote: the catalog that this API key owns and that is named mind_small_headlines.
 
+The owner's private Hugging Face copy of the dataset (config.HF_DATASET_REPO) is not deleted
+by this code; every report reminds to delete that repository by hand.
+
 Shared catalogs and catalogs with any other name are never touched. Only those fixed
 folders inside the project are deleted, a symlink is removed as a link and never
 followed, and nothing happens without `confirm=True` (the default is a dry run).
@@ -88,6 +91,11 @@ def run(root: Path, client, *, confirm: bool = False) -> Report:
     else:
         catalogs = project_catalogs(client)
         report.catalogs = [f"{c.catalog_name} ({c.catalog_id})" for c in catalogs]
+    report.skipped.append(
+        f"the private Hugging Face copy ({config.HF_DATASET_REPO}): delete that dataset "
+        "repository by hand (its Settings page, or HfApi().delete_repo(..., repo_type="
+        "'dataset'))"
+    )
     if confirm:
         for c in catalogs:  # the catalog first: its id is also recorded under .temp/work
             client.delete_catalog(c.catalog_id)

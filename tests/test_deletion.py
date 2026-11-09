@@ -108,7 +108,8 @@ def test_nothing_to_delete(tmp_path):
     root = tmp_path / "empty"
     root.mkdir()
     report = deletion.run(root, FakeClient([]))
-    assert report.lines() == ["nothing to delete"]
+    assert report.lines()[-1] == "nothing to delete"
+    assert any(config.HF_DATASET_REPO in line for line in report.lines())
 
 
 def test_target_folder_resolving_outside_project_is_refused(tmp_path):
@@ -120,3 +121,10 @@ def test_target_folder_resolving_outside_project_is_refused(tmp_path):
     with pytest.raises(RuntimeError, match="outside the project"):
         deletion.run(root, None, confirm=True)
     assert (outside / "data").exists()
+
+
+def test_every_report_reminds_of_the_private_hugging_face_copy(tmp_path):
+    root = _project(tmp_path)
+    for confirm in (False, True):
+        report = deletion.run(root, FakeClient(CATALOGS), confirm=confirm)
+        assert any(config.HF_DATASET_REPO in s and "by hand" in s for s in report.skipped)
