@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/brand/sig.svg" width="150" alt="Sig, the project mascot: a cute amber droplet with big shiny eyes">
+  <img src="assets/brand/sig.svg" width="150" alt="Sig, the project mascot: a cute blue droplet with big shiny eyes, its tip a glowing network node">
 </p>
 
 > 👋 Hi, I'm **Sig**, a tiny drop of distilled *significance*. Significance means what a
