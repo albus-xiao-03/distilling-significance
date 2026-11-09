@@ -2,7 +2,9 @@
 
 > **Status:** generated locally on 2026-11-08. It holds **25,000 impressions**: 17,053 from
 > MIND-small's training file and 7,947 from its validation file, labelled with variant V1o.
-> The dataset folder is git-ignored and has not been distributed. This card holds no data.
+> The dataset folder is git-ignored; one private copy is kept in the owner's Hugging Face
+> dataset repository `albus-xiao-03/significance-distilled`. It has not been distributed. This
+> card holds no data.
 > The full results are in [`reports/R1_expanded_results.md`](reports/R1_expanded_results.md);
 > the first, 5,000-record version is in [`reports/R1_results.md`](reports/R1_results.md).
 
@@ -24,7 +26,11 @@ history-conditioned and unconditional scores.
 ## The files
 
 The dataset lives in `dataset/`, directly under the project. The folder is git-ignored and is
-never committed, pushed or redistributed.
+never committed to the code repository or shared. Its only copy outside the project folder is
+the owner's **private** Hugging Face dataset repository, `albus-xiao-03/significance-distilled`.
+That copy holds the two parquet files, `metadata.json` and a dataset card. It was uploaded with
+`scripts/09_upload_hf.py`, which refuses a repository that is not private and checks every
+file's checksum after the upload.
 
 | File | Records | Rows | Labelled attended |
 |---|---|---|---|
@@ -208,10 +214,14 @@ third of what real labels teach.
   published only without a material portion of the dataset.
 - **The labels.** The labels are BehaviorGPT outputs, subject to Unbox AI's terms. The MIT
   licence of this repository covers code only.
-- **Never distributed.** The dataset folder is never committed, pushed or redistributed.
+- **Never distributed.** The dataset is never committed to the code repository, made public
+  or shared. The one copy outside the project folder is the owner's private Hugging Face
+  dataset repository: private storage, not distribution.
 - **Deletion.** See [`README.md`](README.md):
   - `python -I scripts/delete_data.py --confirm` deletes `.temp/data/`, `.temp/work/`,
     `.temp/cache/`, `dataset/`, `outputs/` and the project's own Unbox AI catalog;
+  - the private Hugging Face repository `albus-xiao-03/significance-distilled` is deleted by
+    hand (the script reminds you);
   - on a rights holder's request, if the terms disallow this use, and at the end of the
     project.
 
@@ -242,6 +252,7 @@ python -I scripts/05_evaluate.py --set dataset_eval
 python -I scripts/05_evaluate.py --set dataset_validation   # with E3a
 python -I scripts/05_evaluate.py --set dataset_training
 python -I scripts/07_distil.py --set dataset_eval
+python -I scripts/09_upload_hf.py --confirm     # optional: the owner's private HF copy
 ```
 
 Responses are cached under `.temp/cache/`, so a rerun reproduces the same labels without new
