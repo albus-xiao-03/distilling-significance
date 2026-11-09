@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-labelledby="sig-title sig-desc">
-  <title id="sig-title">Sig, the distilling-significance mascot</title>
+  <title id="sig-title">Sig, the Distilling Significance mascot</title>
   <desc id="sig-desc">A round amber droplet with big shiny eyes, rosy cheeks, a happy smile and a sparkle by its tip.</desc>
   <defs>
     <radialGradient id="sig-body" cx="40%" cy="38%" r="75%">

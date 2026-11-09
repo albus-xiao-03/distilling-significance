@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/brand/logo.svg" width="116" alt="distilling-significance logo: a layered network on a blue tile, distilling many inputs into one glowing output">
+  <img src="assets/brand/logo.svg" width="116" alt="Distilling Significance logo: a layered network on a blue tile, distilling many inputs into one glowing output">
 </p>
 
-<h1 align="center">distilling-significance</h1>
+<h1 align="center">Distilling Significance</h1>
 
 <p align="center">
   <b>Can a behaviour model guess which headlines <i>you</i> will click, with zero training?</b><br>

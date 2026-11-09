@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-labelledby="logo-title logo-desc">
-  <title id="logo-title">distilling-significance logo</title>
+  <title id="logo-title">Distilling Significance logo</title>
   <desc id="logo-desc">A layered network on a blue tile: many input nodes converge through a hidden layer into one glowing output node, along one traced path. Significance, distilled.</desc>
   <defs>
     <linearGradient id="logo-bg" x1="0" y1="0" x2="1" y2="1">
