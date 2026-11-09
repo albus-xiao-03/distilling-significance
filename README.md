@@ -135,7 +135,9 @@ second column is the validation day only:
 > 🗞️ Meet **Pip**, a headline wearing its pseudo-label sticker. Every row of the dataset is a
 > Pip: *"BehaviorGPT thinks this person opens this headline: yes or no."*
 
-It's stored locally in `dataset/`, which is git-ignored and never pushed or shared:
+It's stored locally in `dataset/`, which is git-ignored. The one other copy is a **private**
+Hugging Face dataset repository of the owner, `albus-xiao-03/significance-distilled`. It is
+never made public or shared:
 
 | File | What's in it |
 |---|---|
@@ -183,6 +185,7 @@ python -I scripts/08_expand.py views         # 🧷 assemble the dataset (no API
 python -I scripts/06_dataset.py              # 🗂️ write dataset/
 python -I scripts/05_evaluate.py --set dataset_eval   # 📏 grade it
 python -I scripts/07_distil.py --set dataset_eval     # 🎓 train the student
+python -I scripts/09_upload_hf.py --confirm  # 🔒 private Hugging Face copy (refuses public repos)
 ```
 
 **Good to know:**
@@ -252,8 +255,9 @@ src/significance/
   experiment.py        assessing predictors, comparisons, strata
   dataset.py           the six-column dataset files, their checks and metadata
   student.py           the distillation student
+  publish.py           the private Hugging Face copy: privacy check, card, upload, verification
   deletion.py          the deletion term
-scripts/               01_prepare ... 08_expand, delete_data.py
+scripts/               01_prepare ... 09_upload_hf, delete_data.py
 tests/                 unit tests: synthetic data and a fake BehaviorGPT client only
 reports/               aggregate results only
 assets/brand/          logos and mascots (Sig and Pip)
@@ -284,6 +288,10 @@ assets/brand/          logos and mascots (Sig and Pip)
 - **Only aggregates are published.** Committed documents, such as reports and the data card,
   hold the method and aggregate numbers only: no headlines, no user ids, no per-impression
   rows.
+- **One private copy on Hugging Face.** A copy of the label dataset is kept in the owner's
+  private Hugging Face dataset repository, `albus-xiao-03/significance-distilled`.
+  - It is private storage, not distribution: it is never made public or shared.
+  - `scripts/09_upload_hf.py` refuses to upload to any repository that is not private.
 
 ## 🧹 Deletion term
 
@@ -296,6 +304,7 @@ assets/brand/          logos and mascots (Sig and Pip)
 | The BehaviorGPT response cache | `.temp/cache/` |
 | The generated label dataset (and the superseded first version, if present) | `dataset/` (`outputs/`) |
 | The project's own Unbox AI catalog (`mind_small_headlines`) | Unbox AI, under the owner's key |
+| The private copy of the label dataset | the owner's private Hugging Face dataset repository `albus-xiao-03/significance-distilled` |
 
 Shared catalogs and catalogs this project did not create are never touched.
 
@@ -312,6 +321,9 @@ python -I scripts/delete_data.py            # dry run: lists what would be delet
 python -I scripts/delete_data.py --confirm  # deletes it
 ```
 
+The script does not delete the Hugging Face copy; every run reminds you to delete it by hand
+(step 3 below).
+
 Manual equivalent, if the script cannot run:
 
 1. Delete the folders `.temp/data/`, `.temp/work/`, `.temp/cache/`, `dataset/` and `outputs/`.
@@ -324,6 +336,10 @@ Manual equivalent, if the script cannot run:
    [c for c in client.list_catalogs() if c.owned]  # find its catalog_id
    client.delete_catalog("cat_...")  # cannot be undone
    ```
+3. Delete the private Hugging Face dataset repository `albus-xiao-03/significance-distilled`:
+   use its Settings page (Delete this dataset), or run
+   `HfApi().delete_repo("albus-xiao-03/significance-distilled", repo_type="dataset")` with a
+   token that may write to it.
 
 **Commitment:** label files are never redistributed.
 
