@@ -190,8 +190,9 @@ def build_metadata(
         "api_usage": api_usage,
         "rights": "MIND is licensed under the Microsoft Research License Terms "
         "(non-commercial research, no distribution). The labels are BehaviorGPT outputs "
-        "(Unbox AI terms). Records can be traced back to MIND impressions, so this folder is "
-        "MIND-derived data: never commit, push or redistribute it. See README.md and "
-        "DATACARD.md.",
+        "(Unbox AI terms). Records can be traced back to MIND impressions, so this is "
+        "MIND-derived data: keep it private. Never commit it to a public repository, make it "
+        "public or share it; the only copy outside the project folder is the owner's private "
+        "Hugging Face dataset repository. See README.md and DATACARD.md.",
         **dict(extra or {}),
     }
